@@ -9,7 +9,7 @@ from datetime import date, timedelta
 from typing import Dict, Any, Optional
 from sqlalchemy.orm import Session
 
-from src.continuum.config import get_today, get_settings
+from src.continuum.config import get_today, get_settings, get_rules
 from src.continuum.models import Episode, Visit, Prescription, Patient
 from src.continuum.workflow.states import EpisodeReason, EpisodeStatus, is_valid_transition
 from src.continuum.engine.dosing import parse_dosing_string, calculate_days_supply
@@ -28,9 +28,10 @@ def generate_episodes_from_rules(
     Auto-closes open episodes when a patient returns for an in-person OPD consultation.
     """
     today = anchor_date or get_today()
-    settings = get_settings()
-    fu_grace = settings.get("thresholds", {}).get("followup_grace_days", 7)
-    rf_grace = settings.get("thresholds", {}).get("refill_buffer_days", 7)
+    rules = get_rules()
+    grace_cfg = rules.get("grace_periods", {})
+    fu_grace = grace_cfg.get("followup_grace_days", 7)
+    rf_grace = grace_cfg.get("refill_grace_days", 7)
 
     stats = {
         "episodes_created": 0,
@@ -61,28 +62,48 @@ def generate_episodes_from_rules(
         # 1. Follow-up signal via due_rules engine
         fu_overdue_days = calculate_followup_overdue_days(last_visit.next_visit_due_date, today, fu_grace)
 
-        # 2. Refill signal: EARLIEST-exhausting drug on the last prescription
+        # 2. Refill signal: EARLIEST-exhausting CHRONIC drug on the last prescription (>= 14 days supply)
         prescriptions = db.query(Prescription).filter(
             Prescription.patient_id == patient.id,
             Prescription.visit_id == last_visit.id
         ).all()
 
+        chronic_diab = set(rules.get("chronic_medications", {}).get("diabetes", []))
+        chronic_cardio = set(rules.get("chronic_medications", {}).get("cardiovascular_hypertension_thyroid", []))
+        chronic_set = {d.upper() for d in (chronic_diab | chronic_cardio)}
+        
+        refill_cfg = rules.get("refill_signal", {})
+        min_supply_days = refill_cfg.get("min_supply_days", 14)
+        exclude_forms = refill_cfg.get("exclude_dose_forms", ["ML", "SYRUP", "DROPS", "INJ", "GEL", "OINT"])
+
         ends = []
         for rx in prescriptions:
             if not rx.quantity or rx.quantity <= 0:
                 continue
+
+            med_name_upper = rx.medication_name.strip().upper()
+
+            # Exclude liquid / acute dosage forms
+            if any(form in med_name_upper for form in exclude_forms):
+                continue
+
+            # Filter strictly to chronic medications
+            if not any(c in med_name_upper for c in chronic_set):
+                continue
+
             dpd = parse_dosing_string(rx.raw_dose)
             if not dpd or dpd <= 0:
                 continue
             
             supply_days = calculate_days_supply(rx.quantity, dpd)
-            if supply_days is None:
+            if supply_days is None or supply_days < min_supply_days:
                 continue
+
             end_date = last_date + timedelta(days=supply_days)
             ends.append((end_date, rx.medication_name, rx.id))
 
         if ends:
-            first_end, first_drug, rx_id = min(ends, key=lambda x: x[0])
+            first_end, first_drug, rx_id = min(ends, key=lambda x: (x[0], x[1]))
             refill_overdue_days = calculate_refill_overdue_days(first_end, today, rf_grace)
         else:
             first_end, first_drug, rx_id, refill_overdue_days = None, None, None, 0

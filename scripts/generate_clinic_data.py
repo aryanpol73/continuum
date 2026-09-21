@@ -268,6 +268,29 @@ def build():
 
     return people, patients, visits, notes, rx, reports, contacts, dup_truth, dm_uhids
 
+try:
+    import yaml
+    _rules_path = BASE_DIR / "config" / "rules.yaml"
+    if _rules_path.exists():
+        with open(_rules_path, "r", encoding="utf-8") as _rf:
+            _rules = yaml.safe_load(_rf) or {}
+        CHRONIC_DRUGS = set(_rules.get("chronic_medications", {}).get("diabetes", [])) | \
+                        set(_rules.get("chronic_medications", {}).get("cardiovascular_hypertension_thyroid", []))
+        MIN_SUPPLY_DAYS = int(_rules.get("refill_signal", {}).get("min_supply_days", 14))
+        FOLLOWUP_GRACE = int(_rules.get("grace_periods", {}).get("followup_grace_days", 7))
+        REFILL_GRACE = int(_rules.get("grace_periods", {}).get("refill_grace_days", 7))
+    else:
+        raise FileNotFoundError
+except Exception:
+    CHRONIC_DRUGS = {d[0] for d in DIAB_DRUGS} | {
+        "TELMA 40", "ECOSPRIN AV 75", "ROSUMAC ASP (10/75)",
+        "THYRONEED 125", "DILNIP M 10/25", "NEXOVAS T (40/10)",
+        "SHELCAL 500", "NEUROBION FORTE"
+    }
+    MIN_SUPPLY_DAYS = 14
+    FOLLOWUP_GRACE, REFILL_GRACE = 7, 7
+
+
 # ---------------------------------------------------------------- answer key
 def expected_overdue(people, visits, rx, contacts, dm_uhids):
     by_uh_visits, by_opd_rx = {}, {}
@@ -290,16 +313,21 @@ def expected_overdue(people, visits, rx, contacts, dm_uhids):
         if last["FollowUpDate"]:
             fu = max(0, (TODAY - date.fromisoformat(last["FollowUpDate"])).days - FOLLOWUP_GRACE)
 
-        # refill signal: EARLIEST-exhausting drug on the last prescription
+        # refill signal: EARLIEST-exhausting CHRONIC drug on the last prescription (>= 14 days supply)
         lines = by_opd_rx.get(last["OPD_ID"], [])
         ends = []
         for ln in lines:
+            if ln["DrugName"] not in CHRONIC_DRUGS:
+                continue
             if ln["Qty"] == "":
                 continue
             dpd = DOSES_PER_DAY.get(ln["Dose"])
             if not dpd:
                 continue
-            ends.append((last_date + timedelta(days=int(int(ln["Qty"]) / dpd)), ln["DrugName"]))
+            days = int(int(ln["Qty"]) / dpd)
+            if days < MIN_SUPPLY_DAYS:
+                continue
+            ends.append((last_date + timedelta(days=days), ln["DrugName"]))
         if ends:
             first_end, first_drug = min(ends)
             rf = max(0, (TODAY - first_end).days - REFILL_GRACE)

@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Dict, Any, Union
 from sqlalchemy.orm import Session
 
-from src.continuum.models import Patient, Consent, Visit, Prescription
+from src.continuum.models import Patient, Consent, Visit, Prescription, UploadedReport
 from src.continuum.ingest.normalize import (
     normalize_phone, normalize_date, normalize_name, normalize_gender
 )
@@ -120,17 +120,25 @@ def ingest_akola_dataset(data_dir: Union[str, Path], db: Session, user: str = "s
             reader = csv.DictReader(f)
             for row in reader:
                 opd_id = row.get("OPD_ID", "").strip()
-                notes_lookup[opd_id] = row.get("Diagnosis", "")
+                notes_lookup[opd_id] = {
+                    "diagnosis": row.get("Diagnosis", ""),
+                    "investigation_advice": row.get("InvestigationAdvice", "")
+                }
 
     # 4. Ingest opd_visits.csv
     visits_file = path / "opd_visits.csv"
     opd_id_to_visit_id = {}
+    seen_opd_ids = set()
     if visits_file.exists():
         with open(visits_file, "r", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             for row in reader:
-                uh_id = row.get("UH_ID", "").strip()
                 opd_id = row.get("OPD_ID", "").strip()
+                if not opd_id or opd_id in seen_opd_ids:
+                    continue
+                seen_opd_ids.add(opd_id)
+
+                uh_id = row.get("UH_ID", "").strip()
                 pid = patient_id_map.get(uh_id)
                 if not pid:
                     continue
@@ -138,7 +146,9 @@ def ingest_akola_dataset(data_dir: Union[str, Path], db: Session, user: str = "s
                 v_date = normalize_date(row.get("OPDDate"))
                 fu_date = normalize_date(row.get("FollowUpDate"))
                 fu_after = int(row.get("FollowUpAfterDays")) if row.get("FollowUpAfterDays") and str(row.get("FollowUpAfterDays")).isdigit() else None
-                dx_text = notes_lookup.get(opd_id, "")
+                note_info = notes_lookup.get(opd_id, {})
+                dx_text = note_info.get("diagnosis", "") if isinstance(note_info, dict) else ""
+                inv_advice = note_info.get("investigation_advice", "") if isinstance(note_info, dict) else ""
                 is_dm, _, _ = classify_diabetes_diagnosis(dx_text)
 
                 visit = Visit(
@@ -148,6 +158,7 @@ def ingest_akola_dataset(data_dir: Union[str, Path], db: Session, user: str = "s
                     doctor_name=row.get("Consultant", "Dr. Ashwin Sadavarte"),
                     department="Diabetology & Medicine",
                     diagnosis_raw=dx_text,
+                    investigation_advice=inv_advice or None,
                     is_diabetes_cohort=is_dm,
                     followup_after_days=fu_after,
                     next_visit_due_date=fu_date
@@ -160,10 +171,17 @@ def ingest_akola_dataset(data_dir: Union[str, Path], db: Session, user: str = "s
 
     # 5. Ingest prescriptions.csv
     rx_file = path / "prescriptions.csv"
+    seen_rx_line_ids = set()
     if rx_file.exists():
         with open(rx_file, "r", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             for row in reader:
+                rx_line_id = row.get("RxLineID", "").strip()
+                if rx_line_id and rx_line_id in seen_rx_line_ids:
+                    continue
+                if rx_line_id:
+                    seen_rx_line_ids.add(rx_line_id)
+
                 opd_id = row.get("OPD_ID", "").strip()
                 uh_id = row.get("UH_ID", "").strip()
                 vid = opd_id_to_visit_id.get(opd_id)
@@ -194,6 +212,27 @@ def ingest_akola_dataset(data_dir: Union[str, Path], db: Session, user: str = "s
                 )
                 db.add(rx)
                 stats["prescriptions_ingested"] += 1
+        db.commit()
+
+    # 6. Ingest uploaded_reports.csv
+    reports_file = path / "uploaded_reports.csv"
+    stats["reports_ingested"] = 0
+    if reports_file.exists():
+        with open(reports_file, "r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                u_date = normalize_date(row.get("UploadDate"))
+                if not u_date:
+                    continue
+                rep = UploadedReport(
+                    uh_id=row.get("UH_ID", "").strip() or None,
+                    file_name=row.get("FileName", "").strip(),
+                    upload_date=u_date,
+                    labelled_as=row.get("LabelledAs", "").strip() or None,
+                    source=row.get("Source", "In-house")
+                )
+                db.add(rep)
+                stats["reports_ingested"] += 1
         db.commit()
 
     log_action(

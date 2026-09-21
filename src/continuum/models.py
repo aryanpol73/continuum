@@ -66,7 +66,7 @@ class Visit(Base):
     doctor_name = Column(String(128), nullable=False)
     department = Column(String(64), default="General Medicine")
     diagnosis_raw = Column(Text, nullable=True)
-    
+    investigation_advice = Column(String(128), nullable=True)
     is_diabetes_cohort = Column(Boolean, default=False, index=True)
     followup_after_days = Column(Integer, nullable=True)
     next_visit_due_date = Column(Date, nullable=True, index=True)
@@ -184,3 +184,15 @@ class DuplicateCluster(Base):
     confidence_score = Column(Float, nullable=False)
     status = Column(String(32), default="PENDING", nullable=False)  # PENDING, RESOLVED_MERGED, RESOLVED_DISTINCT
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class UploadedReport(Base):
+    __tablename__ = "uploaded_reports"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    uh_id = Column(String(64), nullable=True, index=True)
+    file_name = Column(String(256), nullable=False)
+    upload_date = Column(Date, nullable=False, index=True)
+    labelled_as = Column(String(64), nullable=True, index=True)
+    source = Column(String(64), default="In-house")
+

@@ -68,7 +68,7 @@ with Session() as db:
             - **Authorized Kin Contacts:** `{metrics['kin_consented_patients']}`
             """
         )
-        st.info("The 127 refill-only patients represent chronic diabetic individuals who ran out of medication while their appointment was still weeks away.")
+        st.info(f"The {metrics['refill_only_episodes']} refill-only patients represent chronic diabetic individuals who ran out of medication while their appointment was still weeks away.")
 
     st.markdown("---")
     st.subheader("👨‍⚕️ Consultant Retention Scorecard")

@@ -12,7 +12,8 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from src.continuum.db import get_session_factory
-from src.continuum.models import Patient, Visit, Prescription, Episode, OutreachLog, AuditLog
+from src.continuum.models import Patient, Visit, Prescription, Episode, OutreachLog, AuditLog, UploadedReport
+from src.continuum.engine.investigations import get_patient_missing_investigations
 from app.components.patient_card import render_patient_card
 
 st.set_page_config(page_title="Patient 360 | Continuum", page_icon="👤", layout="wide")
@@ -53,9 +54,10 @@ with Session() as db:
     render_patient_card(patient_dict)
 
     # Tabs for comprehensive view
-    t_visits, t_rxs, t_episodes, t_outreach, t_audit = st.tabs([
+    t_visits, t_rxs, t_reports, t_episodes, t_outreach, t_audit = st.tabs([
         "🩺 Consultation Visits",
         "💊 Prescriptions & Refills",
+        "🔬 Investigations & Reports",
         "⚡ Care Continuum Episodes",
         "💬 Outreach History",
         "📜 Audit Trail"
@@ -69,6 +71,7 @@ with Session() as db:
         else:
             for v in visits:
                 with st.container():
+                    inv_markup = f"<div style='margin-top: 4px; color: #b45309;'><strong>Advised Investigations:</strong> {v.investigation_advice}</div>" if v.investigation_advice else ""
                     st.markdown(
                         f"""
                         <div style="background: white; border-left: 4px solid #0284c7; padding: 12px; margin-bottom: 10px; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
@@ -77,6 +80,7 @@ with Session() as db:
                                 <span style="color: #64748b;">{v.doctor_name} ({v.department})</span>
                             </div>
                             <div style="margin-top: 6px;"><strong>Clinical Impression:</strong> {v.diagnosis_raw or 'None recorded'}</div>
+                            {inv_markup}
                             <div style="margin-top: 4px; color: #0369a1;"><strong>Scheduled Next Review:</strong> {v.next_visit_due_date or 'None Scheduled'}</div>
                             <div style="margin-top: 4px; font-size: 0.8rem; color: #059669;">
                                 {'✓ Chronic Diabetes Mellitus' if v.is_diabetes_cohort else 'Non-diabetic consultation'}
@@ -104,6 +108,43 @@ with Session() as db:
                     "Refill Due Date": rx.refill_due_date
                 })
             st.dataframe(rx_table, use_container_width=True)
+
+    with t_reports:
+        st.subheader("Laboratory Investigations & Scanned Reports")
+        
+        # 1. Missing / Overdue Advised Tests
+        missing_invs = get_patient_missing_investigations(db, patient.uh_id)
+        if missing_invs:
+            st.warning(f"⚠️ **{len(missing_invs)} Advised Investigations Missing Report (>45d Turnaround)**")
+            missing_data = []
+            for m in missing_invs:
+                missing_data.append({
+                    "Advised Test": m["test_name"],
+                    "Date Advised": m["advised_date"],
+                    "Days Pending": m["days_pending"],
+                    "Turnaround Threshold": f"{m['turnaround_threshold_days']} days",
+                    "Administrative Status": "REPORT PENDING"
+                })
+            st.dataframe(missing_data, use_container_width=True)
+        else:
+            st.success("✓ No overdue missing investigation reports for this patient.")
+
+        st.markdown("---")
+        # 2. Uploaded / Linked Reports
+        st.markdown("#### Uploaded Diagnostic Reports & Documents")
+        uploaded = db.query(UploadedReport).filter(UploadedReport.uh_id == patient.uh_id).order_by(UploadedReport.upload_date.desc()).all()
+        if not uploaded:
+            st.info("No scanned reports or lab PDFs uploaded for this UH_ID.")
+        else:
+            rep_data = []
+            for r in uploaded:
+                rep_data.append({
+                    "Document File": r.file_name,
+                    "Upload Date": r.upload_date,
+                    "Label / Test": r.labelled_as or "Unlabelled Scan",
+                    "Origin Lab": r.source
+                })
+            st.dataframe(rep_data, use_container_width=True)
 
     with t_episodes:
         st.subheader("Care Continuum Episodes")

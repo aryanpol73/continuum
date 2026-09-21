@@ -40,8 +40,9 @@ Continuum bridges this gap by transforming raw, messy clinic exports (CSV/Excel)
    - Multi-page clinical dashboard with KPIs, time-travel simulation date controller, 360° patient timelines, prescription OCR verification workbench, and compliance audit logs.
 
 7. **Ground-Truth Scoring Harness**:
-   - Evaluates engine output against calibrated synthetic answer keys across 148 overdue diabetes cases (including 58 refill-only gaps).
-   - Validates exact arithmetic day count parity and 100% consent gate compliance.
+   - Evaluates engine output against calibrated synthetic answer keys across 137 overdue diabetes cases (including 47 refill-only gaps).
+   - Reconciled with chronic medication filter (skipping acute syrups/short-course PPIs) and `actionable_window_days: 540`.
+   - Validates exact arithmetic day count parity (100.0%) and 100% consent gate compliance.
 
 ---
 
@@ -60,7 +61,7 @@ pip install -r requirements.txt
 ```bash
 python scripts/generate_clinic_data.py
 ```
-This generates 515 patients in `data/` along with calibrated `_expected_overdue.csv` (148 overdue diabetes patients, 58 refill-only gaps).
+This generates 515 patients in `data/` along with calibrated `_expected_overdue.csv` (137 overdue diabetes patients, 47 refill-only gaps).
 
 ### 3. Initialize Database & Run Ingest
 ```bash
@@ -78,7 +79,7 @@ This classifies the diabetes cohort, parses dosing patterns, computes supply exh
 ```bash
 python scripts/score_against_truth.py
 ```
-Verifies that engine output matches the labelled synthetic answer key exactly across all 148 cases.
+Verifies that engine output matches the labelled synthetic answer key exactly across all 137 cases.
 
 ### 6. Launch the Streamlit Care Coordinator Portal
 ```bash

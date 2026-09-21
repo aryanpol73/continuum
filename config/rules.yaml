@@ -69,3 +69,23 @@ chronic_medications:
     - "Forxiga"
     - "Insulin"
     - "Lantus"
+  cardiovascular_hypertension_thyroid:
+    - "TELMA 40"
+    - "ECOSPRIN AV 75"
+    - "ROSUMAC ASP (10/75)"
+    - "THYRONEED 125"
+    - "DILNIP M 10/25"
+    - "NEXOVAS T (40/10)"
+    - "SHELCAL 500"
+    - "NEUROBION FORTE"
+
+refill_signal:
+  chronic_only: true          # only drugs in chronic_medications (never acute syrups/PPIs)
+  min_supply_days: 14         # anything shorter is an acute course, not a chronic retention signal
+  exclude_dose_forms: ["ML", "SYRUP", "DROPS", "INJ", "GEL", "OINT"]
+
+actionable_window:
+  actionable_window_days: 540 # ~18 months; older episodes move to dormant/archive tab
+
+investigation_rules:
+  report_turnaround_days: 45  # Flag if advised investigation has no report uploaded after 45 days
