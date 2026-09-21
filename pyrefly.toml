@@ -1,5 +1,10 @@
+search-path = ["."]
+disable-search-path-heuristics = true
+
 project-excludes = [
     "app/**",
     "tests/**",
-    "scripts/**"
+    "scripts/**",
+    "generate_clinic_data.py"
 ]
+
