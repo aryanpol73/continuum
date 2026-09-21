@@ -1,0 +1,12 @@
+{
+    "pythonPath": "C:\\Users\\Aryan\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+    "include": [
+        "src",
+        "app",
+        "scripts",
+        "tests"
+    ],
+    "extraPaths": [
+        "."
+    ]
+}
