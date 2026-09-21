@@ -431,3 +431,45 @@ def test_clinic_profile_configuration(memory_db):
     assert "Akola Specialty Diabetes Center" in payload2["body"]
     assert "+91 99887 76655" in payload2["body"]
 
+
+def test_missing_kin_phone_logs_accurate_reason(memory_db):
+    """Verifies that if patient has no kin phone, escalation refuses with 'no number on file'."""
+    p = Patient(
+        uh_id="TEST-ESC-6",
+        name="Santosh Shinde",
+        phone="+919822088888",
+        kin_name="Archana Shinde",
+        kin_phone=None,  # Null / missing kin phone
+        kin_relation="Spouse"
+    )
+    memory_db.add(p)
+    memory_db.flush()
+
+    set_kin_consent(memory_db, p.id, kin_consent=True, user="tester")
+
+    ep = Episode(
+        patient_id=p.id,
+        reason="FOLLOWUP_OVERDUE",
+        status="contacted",
+        due_date=date(2026, 8, 1),
+        opened_date=date(2026, 9, 19),
+        max_overdue_days=45
+    )
+    memory_db.add(ep)
+    memory_db.commit()
+
+    ok, msg = escalate_episode_to_kin(memory_db, ep.id, user="tester")
+    assert ok is False
+    assert "No kin / caregiver contact number on file" in msg
+
+    audit = (
+        memory_db.query(AuditLog)
+        .filter(AuditLog.action == "KIN_ESCALATION_BLOCKED", AuditLog.entity_id == str(ep.id))
+        .order_by(AuditLog.id.desc())
+        .first()
+    )
+    assert audit is not None
+    assert "no number on file" in audit.details_json
+    assert "contact changed since consent" not in audit.details_json
+
+

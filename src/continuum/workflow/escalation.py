@@ -52,11 +52,15 @@ def get_kin_escalation_candidates(db: Session) -> List[Dict[str, Any]]:
 
         patient = ep.patient
         kin_allowed, reason = verify_kin_consent(db, patient.id)
-        consent = db.query(Consent).filter(Consent.patient_id == patient.id).first()
         if kin_allowed:
-            if not consent or patient.kin_phone != consent.consented_kin_phone:
+            if not patient.kin_phone:
                 kin_allowed = False
-                reason = "contact changed since consent"
+                reason = "no number on file"
+            else:
+                consent = db.query(Consent).filter(Consent.patient_id == patient.id).first()
+                if not consent or patient.kin_phone != consent.consented_kin_phone:
+                    kin_allowed = False
+                    reason = "contact changed since consent"
 
         candidates.append({
             "episode_id": ep.id,
@@ -111,6 +115,22 @@ def escalate_episode_to_kin(
         )
         return False, f"HARD GATE BLOCKED: {reason}"
 
+    # Contact Check: Ensure a kin / caregiver contact number exists on file
+    if not patient.kin_phone:
+        reason = "no number on file"
+        log_action(
+            db,
+            action="KIN_ESCALATION_BLOCKED",
+            entity_type="Episode",
+            entity_id=str(episode_id),
+            user=user,
+            details={
+                "patient_id": patient.id,
+                "reason": reason
+            }
+        )
+        return False, "CANNOT ESCALATE: No kin / caregiver contact number on file."
+
     # Hard Gate Check 2: Bind consent to a specific contact
     consent = db.query(Consent).filter(Consent.patient_id == patient.id).first()
     if not consent or patient.kin_phone != consent.consented_kin_phone:
@@ -129,9 +149,6 @@ def escalate_episode_to_kin(
             }
         )
         return False, f"HARD GATE BLOCKED: {mismatch_reason}"
-
-    if not patient.kin_phone:
-        return False, "CANNOT ESCALATE: No kin / caregiver contact number on file."
 
     # Perform transition to KIN_ESCALATED
     transition_episode(
