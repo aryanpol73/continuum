@@ -1,8 +1,8 @@
 # Continuum — Ambulatory Chronic Care Follow-Up & Retention Engine
 
-Continuum is a clinical workflow, medication refill tracking, and ambulatory care retention platform engineered for Indian outpatient clinics (specifically modeled on Ramraksha Clinic & Chronic Care Center, Pune).
+Continuum is a clinical workflow, medication refill tracking, and ambulatory care retention platform engineered for Indian outpatient clinics (specifically modeled on Ramraksha Hospital, Station Road, Akola, Maharashtra).
 
-Chronic diseases such as **Type 2 Diabetes Mellitus (T2DM)** require ongoing monitoring, timely medication renewals, and scheduled quarterly/biannual physician reviews. In traditional outpatient setups, over 40% of patients drop out of the care continuum after their initial consultation, presenting only when severe microvascular or macrovascular complications emerge.
+Chronic diseases such as **Type 2 Diabetes Mellitus (T2DM)** require ongoing monitoring, timely medication renewals, and scheduled quarterly/biannual physician reviews. In high-volume district outpatient departments, chronic patients frequently lapse when prescriptions expire weeks ahead of their scheduled consultation, presenting only when acute complications emerge.
 
 Continuum bridges this gap by transforming raw, messy clinic exports (CSV/Excel) and scanned prescriptions into proactive, priority-ranked care coordinator worklists with WhatsApp click-to-chat engagement, strict consent governance, and automated validation against ground truth.
 
@@ -22,6 +22,7 @@ Continuum bridges this gap by transforming raw, messy clinic exports (CSV/Excel)
 3. **Care Continuum Episode Management**:
    - Clear architectural split: **reason** (`FOLLOWUP_OVERDUE`, `REFILL_GAP`, `COMBINED`) and workflow **status** (`detected` → `contacted` → `promised` → `returned` / `unreachable` / `opted_out`).
    - **Pure Days-Overdue Ranking**: Ranked strictly by `max_overdue_days` (descending). Zero clinical severity or diagnostic scoring.
+   - Closed-loop return auto-closure: automatically closes open episodes when a returning patient attends an in-person OPD consultation.
    - Escalation queue for unreachable patients.
 
 4. **Proportional Consent Gating & Medico-Legal Safeguards**:
@@ -39,8 +40,8 @@ Continuum bridges this gap by transforming raw, messy clinic exports (CSV/Excel)
    - Multi-page clinical dashboard with KPIs, time-travel simulation date controller, 360° patient timelines, prescription OCR verification workbench, and compliance audit logs.
 
 7. **Ground-Truth Scoring Harness**:
-   - Synthetic clinic data generator with realistic Indian patient demographics, varied dosing, and intentional edge cases.
-   - `score_against_truth.py` script evaluating cohort accuracy, dosing precision, and 100% consent gate compliance.
+   - Evaluates engine output against calibrated synthetic answer keys across 148 overdue diabetes cases (including 58 refill-only gaps).
+   - Validates exact arithmetic day count parity and 100% consent gate compliance.
 
 ---
 
@@ -59,11 +60,11 @@ pip install -r requirements.txt
 ```bash
 python scripts/generate_clinic_data.py
 ```
-This generates ~100 realistic patients in `data/synthetic/` along with a calibrated `ground_truth.json`.
+This generates 515 patients in `data/` along with calibrated `_expected_overdue.csv` (148 overdue diabetes patients, 58 refill-only gaps).
 
 ### 3. Initialize Database & Run Ingest
 ```bash
-python scripts/init_db.py
+python scripts/init_db.py --drop
 python scripts/run_ingest.py
 ```
 
@@ -71,12 +72,13 @@ python scripts/run_ingest.py
 ```bash
 python scripts/run_engine.py
 ```
-This runs cohort classification, parses dosing patterns, calculates refill and follow-up due dates relative to `TODAY`, and generates active episodes.
+This classifies the diabetes cohort, parses dosing patterns, computes supply exhaustion dates, and generates active episodes.
 
 ### 5. Verify Against Ground Truth
 ```bash
 python scripts/score_against_truth.py
 ```
+Verifies that engine output matches the labelled synthetic answer key exactly across all 148 cases.
 
 ### 6. Launch the Streamlit Care Coordinator Portal
 ```bash

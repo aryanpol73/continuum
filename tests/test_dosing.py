@@ -30,7 +30,9 @@ from src.continuum.engine.dosing import (
     ("SOS", 0.0),
     ("PRN", 0.0),
     ("1 tab BD after food", 2.0),
-    ("10 Units at Bedtime", 1.0)
+    ("10 Units at Bedtime", 1.0),
+    ("", None),
+    ("UnknownGibberish", None)
 ])
 def test_parse_dosing_string(dosing_str, expected_freq):
     assert parse_dosing_string(dosing_str) == expected_freq
@@ -42,7 +44,8 @@ def test_parse_dosing_string(dosing_str, expected_freq):
     (90, 3.0, 30),
     (15, 0.5, 30),
     (60, 1.5, 40),
-    (30, 0.0, 30),  # SOS fallback
+    (30, 0.0, None),  # Honest uncomputable signal for PRN/SOS
+    (30, None, None), # Missing frequency
     (0, 2.0, 0),
 ])
 def test_calculate_days_supply(quantity, freq, expected_days):
@@ -53,6 +56,7 @@ def test_calculate_refill_due_date():
     start = date(2026, 8, 1)
     refill_date = calculate_refill_due_date(start, 30)
     assert refill_date == date(2026, 8, 31)
+    assert calculate_refill_due_date(start, None) is None
 
 
 @pytest.mark.parametrize("med_name, is_diabetic", [

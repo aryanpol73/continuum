@@ -1,6 +1,7 @@
 """
-AI message personalization module.
-Enhances outreach messages with empathy and culturally tailored tone while strictly enforcing medical non-advice guardrails.
+Message formatting and template interpolation module.
+Strictly adheres to AGENTS.md guardrail:
+"The message generator may only translate and fill placeholders in doctor-approved templates. It must NEVER compose free-form health content."
 """
 
 from __future__ import annotations
@@ -17,59 +18,26 @@ def personalize_clinical_message(
     relationship_context: Optional[str] = None
 ) -> PersonalizedMessageDraft:
     """
-    Polishes an outreach message while respecting strict medical safety guardrails.
+    Renders doctor-approved outreach messages with strict medical non-advice guardrails.
+    Never generates or rewrites free-form clinical advice.
     """
-    settings = get_settings()
-    api_key = settings.get("gemini_api_key") or os.getenv("GEMINI_API_KEY")
-
-    if api_key:
-        try:
-            from google import genai
-            from google.genai import types
-
-            client = genai.Client(api_key=api_key)
-            prompt = f"""
-            You are a polite, compassionate care coordinator at Ramraksha Clinic in Pune, India.
-            Rewrite the following outreach reminder in {language} (language code) to make it warm, respectful, and clear.
-            
-            STRICT GUARDRAILS:
-            1. DO NOT give any clinical diagnoses or medication adjustments.
-            2. ONLY remind about appointment review or medication supply stock.
-            3. Address the patient respectfully as {patient_name} ji.
-            
-            Original Message:
-            {base_text}
-            """
-
-            response = client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    response_schema=PersonalizedMessageDraft,
-                ),
-            )
-            if response.parsed:
-                return response.parsed
-        except Exception:
-            pass
-
-    # Fallback to standard base text
     subjects = {
-        "en": "Health Review & Refill Reminder - Ramraksha Clinic",
-        "hi": "स्वास्थ्य परामर्श एवं दवाई स्मरणपत्र - रामरक्षा क्लिनिक",
-        "mr": "आरोग्य तपासणी स्मरणपत्र - रामरक्षा क्लिनिक"
+        "en": "Health Review & Refill Reminder - Ramraksha Hospital (Akola)",
+        "hi": "स्वास्थ्य परामर्श एवं दवाई स्मरणपत्र - रामरक्षा हॉस्पिटल (अकोला)",
+        "mr": "आरोग्य तपासणी व औषध स्मरणपत्र - रामरक्षा हॉस्पिटल (अकोला)"
     }
 
     ctas = {
-        "en": "Book Consultation",
-        "hi": "परामर्श बुक करें",
-        "mr": "तपासणी निश्चित करा"
+        "en": "Contact Clinic Desk",
+        "hi": "क्लिनिक डेस्क से संपर्क करें",
+        "mr": "क्लिनिक डेस्कशी संपर्क साधा"
     }
 
+    # Template-governed text delivery: zero unauthorized free-form improvisation
     return PersonalizedMessageDraft(
         language=language,
         subject=subjects.get(language, subjects["en"]),
         body=base_text,
         call_to_action=ctas.get(language, ctas["en"])
     )
+

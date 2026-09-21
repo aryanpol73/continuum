@@ -123,3 +123,65 @@ def test_golden_e2e_flow():
         # 10. Audit Log Verification
         logs = db.query(AuditLog).all()
         assert len(logs) >= 4
+
+
+def test_closed_loop_auto_close_on_return():
+    """
+    Verifies that when a lapsed patient attends an in-person OPD consultation,
+    the clinical engine automatically verifies the visit and marks the open episode as returned.
+    """
+    engine = create_engine("sqlite:///:memory:", echo=False)
+    Base.metadata.create_all(bind=engine)
+    Session = sessionmaker(bind=engine)
+
+    with Session() as db:
+        p = Patient(uh_id="LOOP-001", name="Ramesh Kale", phone="+919822011111")
+        db.add(p)
+        db.flush()
+
+        # Visit 1: Overdue consultation
+        v1 = Visit(
+            patient_id=p.id,
+            opd_id="OPD-201",
+            visit_date=date(2026, 6, 1),
+            doctor_name="Dr. Ashwin Sadavarte",
+            diagnosis_raw="T2DM",
+            is_diabetes_cohort=True,
+            next_visit_due_date=date(2026, 7, 1)
+        )
+        db.add(v1)
+        db.commit()
+
+        # Episode generated as of 2026-08-01
+        generate_episodes_from_rules(db, anchor_date=date(2026, 8, 1))
+        ep = db.query(Episode).filter(Episode.patient_id == p.id).first()
+        assert ep is not None
+        assert ep.status == "detected"
+        assert ep.closed_date is None
+
+        # Coordinator contacts patient
+        transition_episode(db, ep.id, new_status="contacted", user="coordinator")
+        assert ep.status == "contacted"
+
+        # Patient actually attends OPD on 2026-08-15 (new visit with future follow-up)
+        v2 = Visit(
+            patient_id=p.id,
+            opd_id="OPD-202",
+            visit_date=date(2026, 8, 15),
+            doctor_name="Dr. Ashwin Sadavarte",
+            diagnosis_raw="T2DM Review",
+            is_diabetes_cohort=True,
+            next_visit_due_date=date(2026, 9, 30)  # Active future date
+        )
+        db.add(v2)
+        db.commit()
+
+        # Run engine on 2026-08-16
+        res = generate_episodes_from_rules(db, anchor_date=date(2026, 8, 16))
+        assert res["episodes_auto_closed"] == 1
+
+        db.refresh(ep)
+        assert ep.status == "returned"
+        assert ep.closed_date == date(2026, 8, 16)
+        assert "Attended OPD on 2026-08-15" in ep.closure_reason
+

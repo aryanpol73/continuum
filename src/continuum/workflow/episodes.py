@@ -12,7 +12,8 @@ from sqlalchemy.orm import Session
 from src.continuum.config import get_today, get_settings
 from src.continuum.models import Episode, Visit, Prescription, Patient
 from src.continuum.workflow.states import EpisodeReason, EpisodeStatus, is_valid_transition
-from src.continuum.engine.dosing import parse_dosing_string
+from src.continuum.engine.dosing import parse_dosing_string, calculate_days_supply
+from src.continuum.engine.due_rules import calculate_followup_overdue_days, calculate_refill_overdue_days
 from src.continuum.audit import log_action
 
 
@@ -23,7 +24,8 @@ def generate_episodes_from_rules(
 ) -> Dict[str, int]:
     """
     Evaluates clinical database records against due rules and generates or refreshes active episodes.
-    Calculates both follow-up overdue days and earliest medication refill exhaustion days.
+    Calculates both follow-up overdue days and earliest medication refill exhaustion days for the diabetes cohort.
+    Auto-closes open episodes when a patient returns for an in-person OPD consultation.
     """
     today = anchor_date or get_today()
     settings = get_settings()
@@ -34,11 +36,18 @@ def generate_episodes_from_rules(
         "episodes_created": 0,
         "refill_only_episodes": 0,
         "followup_only_episodes": 0,
-        "combined_episodes": 0
+        "combined_episodes": 0,
+        "episodes_auto_closed": 0
     }
 
-    # Group visits by patient
-    patients = db.query(Patient).all()
+    # Filter strictly to the diabetes cohort
+    patients = (
+        db.query(Patient)
+        .join(Visit, Visit.patient_id == Patient.id)
+        .filter(Visit.is_diabetes_cohort.is_(True))
+        .distinct()
+        .all()
+    )
 
     for patient in patients:
         visits = db.query(Visit).filter(Visit.patient_id == patient.id).order_by(Visit.visit_date.asc(), Visit.id.asc()).all()
@@ -49,10 +58,8 @@ def generate_episodes_from_rules(
         last_visit = visits[-1]
         last_date = last_visit.visit_date
 
-        # 1. Follow-up signal
-        fu_overdue_days = 0
-        if last_visit.next_visit_due_date:
-            fu_overdue_days = max(0, (today - last_visit.next_visit_due_date).days - fu_grace)
+        # 1. Follow-up signal via due_rules engine
+        fu_overdue_days = calculate_followup_overdue_days(last_visit.next_visit_due_date, today, fu_grace)
 
         # 2. Refill signal: EARLIEST-exhausting drug on the last prescription
         prescriptions = db.query(Prescription).filter(
@@ -68,18 +75,45 @@ def generate_episodes_from_rules(
             if not dpd or dpd <= 0:
                 continue
             
-            supply_days = int(rx.quantity / dpd)
+            supply_days = calculate_days_supply(rx.quantity, dpd)
+            if supply_days is None:
+                continue
             end_date = last_date + timedelta(days=supply_days)
             ends.append((end_date, rx.medication_name, rx.id))
 
         if ends:
             first_end, first_drug, rx_id = min(ends, key=lambda x: x[0])
-            refill_overdue_days = max(0, (today - first_end).days - rf_grace)
+            refill_overdue_days = calculate_refill_overdue_days(first_end, today, rf_grace)
         else:
             first_end, first_drug, rx_id, refill_overdue_days = None, None, None, 0
 
-        # Check if overdue on either signal
+        # Check if overdue on either signal or if patient returned
         if fu_overdue_days == 0 and refill_overdue_days == 0:
+            # Closed-loop return auto-closure: patient attended in-person OPD after episode opened
+            open_ep = (
+                db.query(Episode)
+                .filter(
+                    Episode.patient_id == patient.id,
+                    Episode.status.notin_([
+                        EpisodeStatus.RETURNED.value,
+                        EpisodeStatus.OPTED_OUT.value,
+                    ]),
+                )
+                .first()
+            )
+            if open_ep and last_date > open_ep.opened_date:
+                open_ep.status = EpisodeStatus.RETURNED.value
+                open_ep.closed_date = today
+                open_ep.closure_reason = f"Attended OPD on {last_date}"
+                stats["episodes_auto_closed"] += 1
+                log_action(
+                    db,
+                    action="EPISODE_AUTO_CLOSED_ON_RETURN",
+                    entity_type="Episode",
+                    entity_id=open_ep.id,
+                    user=user,
+                    details={"visit_date": str(last_date)}
+                )
             continue
 
         is_refill_only = (refill_overdue_days > 0 and fu_overdue_days == 0)

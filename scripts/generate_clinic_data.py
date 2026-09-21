@@ -141,6 +141,7 @@ def build():
     dup_truth = []
     uh_seq, opd_seq, rx_seq = 20240001, 10001, 1
 
+    dm_uhids = set()
     for p in people:
         dates = visit_dates(p["prof"])
         if not dates:
@@ -157,6 +158,8 @@ def build():
         split_at = rng.randrange(1, len(dates)) if dup else len(dates)
 
         for idx, uh in enumerate([uh_a] + ([uh_b] if uh_b else [])):
+            if p["is_dm"]:
+                dm_uhids.add(uh)
             # name/mobile drift on the duplicate registration
             nf = p["f"] if idx == 0 else (p["f"][0] + "." if rng.random() < .5 else p["f"])
             nm = p["m"] if idx == 0 or rng.random() < .5 else ""
@@ -263,10 +266,10 @@ def build():
     for _ in range(int(len(visits) * 0.015)):
         visits.append(dict(rng.choice(visits)))
 
-    return people, patients, visits, notes, rx, reports, contacts, dup_truth
+    return people, patients, visits, notes, rx, reports, contacts, dup_truth, dm_uhids
 
 # ---------------------------------------------------------------- answer key
-def expected_overdue(people, visits, rx, contacts):
+def expected_overdue(people, visits, rx, contacts, dm_uhids):
     by_uh_visits, by_opd_rx = {}, {}
     for v in visits:
         by_uh_visits.setdefault(v["UH_ID"], []).append(v)
@@ -276,6 +279,8 @@ def expected_overdue(people, visits, rx, contacts):
 
     rows = []
     for uh, vs in by_uh_visits.items():
+        if uh not in dm_uhids:
+            continue
         vs = sorted({v["OPD_ID"]: v for v in vs}.values(), key=lambda x: x["OPDDate"])
         last = vs[-1]
         last_date = date.fromisoformat(last["OPDDate"])
@@ -329,7 +334,7 @@ def write(path, rows):
 
 def main():
     os.makedirs(OUT, exist_ok=True)
-    people, patients, visits, notes, rx, reports, contacts, dups = build()
+    people, patients, visits, notes, rx, reports, contacts, dups, dm_uhids = build()
     write(f"{OUT}/patients.csv", patients)
     write(f"{OUT}/opd_visits.csv", visits)
     write(f"{OUT}/clinical_notes.csv", notes)
@@ -337,7 +342,7 @@ def main():
     write(f"{OUT}/uploaded_reports.csv", reports)
     write(f"{OUT}/contacts_consent.csv", contacts)
     write(f"{OUT}/_ground_truth_duplicates.csv", dups)
-    exp = expected_overdue(people, visits, rx, contacts)
+    exp = expected_overdue(people, visits, rx, contacts, dm_uhids)
     write(f"{OUT}/_expected_overdue.csv", exp)
 
     dm = sum(1 for p in people if p["is_dm"])

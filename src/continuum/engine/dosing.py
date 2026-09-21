@@ -30,9 +30,11 @@ def parse_fraction(s: str) -> float:
         return 0.0
 
 
-def parse_dosing_string(raw_dose: str) -> float:
+def parse_dosing_string(raw_dose: Optional[str]) -> Optional[float]:
     """
     Parses complex Indian prescription dosing strings into numeric daily units.
+    Returns None if the dosing string is unparseable, ensuring uncomputable regimens
+    are honestly recorded rather than silently fabricating a supply-end date.
     
     Examples:
         '1-0-1' -> 2.0
@@ -43,9 +45,10 @@ def parse_dosing_string(raw_dose: str) -> float:
         'BD' -> 2.0
         'TDS' -> 3.0
         'SOS' -> 0.0
+        'Unknown' -> None
     """
     if not raw_dose:
-        return 1.0  # Default safe assumption
+        return None
 
     text = str(raw_dose).strip().upper()
     rules = get_rules().get("dosing_patterns", {})
@@ -84,7 +87,6 @@ def parse_dosing_string(raw_dose: str) -> float:
     # 4. Insulin units regex (e.g. "10 Units at Bedtime", "14U HS")
     insulin_match = re.search(r"(\d+)\s*(?:UNITS?|U)\b", text)
     if insulin_match:
-        # For insulin, we treat 1 pen / cartridge as standard supply or default 1 unit per day equivalent
         return 1.0
 
     # 5. Standalone number (e.g. "1 Tablet daily", "2 times")
@@ -92,26 +94,33 @@ def parse_dosing_string(raw_dose: str) -> float:
     if single_num:
         return float(single_num.group(1))
 
-    return 1.0
+    # Return None for unknown / unparseable dose strings (never fabricate)
+    return None
 
 
-def calculate_days_supply(quantity: int, frequency_per_day: float) -> int:
+def calculate_days_supply(quantity: Optional[int], frequency_per_day: Optional[float]) -> Optional[int]:
     """
     Computes days of supply given dispensed quantity and daily dosage.
-    Safely handles zero or fractional daily frequencies.
+    Returns None if frequency is uncomputable (e.g. None, SOS, PRN), ensuring
+    the system honestly flags that supply duration cannot be determined.
     """
+    if quantity is None:
+        return None
     if quantity <= 0:
         return 0
-    if frequency_per_day <= 0:
-        return 30  # Fallback for SOS or PRN medications
+    if frequency_per_day is None or frequency_per_day <= 0:
+        return None  # Uncomputable for SOS/PRN or unparseable regimens
 
     return max(1, math.floor(quantity / frequency_per_day))
 
 
-def calculate_refill_due_date(start_date: date, days_supply: int) -> date:
+def calculate_refill_due_date(start_date: date, days_supply: Optional[int]) -> Optional[date]:
     """
     Computes the exact calendar date when current supply will be exhausted.
+    Returns None if days_supply is uncomputable.
     """
+    if days_supply is None:
+        return None
     return start_date + timedelta(days=days_supply)
 
 

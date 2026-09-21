@@ -66,10 +66,13 @@ def get_db() -> Generator[Session, None, None]:
         session.close()
 
 
-def init_db() -> None:
+def init_db(drop_existing: bool = False) -> None:
     """
     Creates all tables in the database schema.
+    Optionally drops existing tables first for a clean re-initialization.
     """
     import src.continuum.models  # Ensure models are imported
     engine = get_engine()
+    if drop_existing:
+        Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)

@@ -7,7 +7,7 @@
 ## Act 1: The Outpatient Reality & Cohort Selection
 1. **The Challenge**:
    - Outpatient clinics manage hundreds of chronic diabetes patients who disappear after a consultation.
-   - Without proactive reminders, over 40% of patients experience medication gaps or unmonitored HbA1c elevation.
+   - Without proactive tracking, diabetic patients regularly experience medication exhaustion gaps weeks before their scheduled review.
 2. **The Solution**:
    - Ingest raw clinic files: `python scripts/run_ingest.py`.
    - Run the engine: `python scripts/run_engine.py`.

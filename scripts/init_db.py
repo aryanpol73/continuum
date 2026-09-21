@@ -15,8 +15,9 @@ from src.continuum.audit import log_action
 
 
 def main():
-    print("[INIT] Initializing Continuum Database Schema...")
-    init_db()
+    drop = "--drop" in sys.argv
+    print(f"[INIT] Initializing Continuum Database Schema (drop_existing={drop})...")
+    init_db(drop_existing=drop)
     
     # Log system initialization event
     Session = get_session_factory()
@@ -27,7 +28,7 @@ def main():
             entity_type="Database",
             entity_id="continuum.db",
             user="system",
-            details={"version": "1.0.0"}
+            details={"version": "1.0.0", "drop_existing": drop}
         )
 
     print("[SUCCESS] Continuum database tables created successfully.")
