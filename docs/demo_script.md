@@ -63,11 +63,21 @@
 
 ---
 
-## Act 5: Caregiver / Kin Escalation Hard Gate
-1. Navigate to **Kin Escalation Queue** (`pages/5_Escalation_Queue.py`):
-   - Explain: *When an overdue patient is unreachable, contacting a third party (kin/caregiver) discloses health status.*
-   - Show the **Kin Consent Hard Gate**: kin messaging is strictly blocked unless `kin_consent = YES` is explicitly on record.
-   - Demonstrate that unconsented kin entries cannot be messaged, preventing HIPAA/DISHA data protection breaches.
+## Act 5: Caregiver / Kin Escalation Hard Gate & Contact Binding
+1. In terminal, seed the demonstration state:
+   ```bash
+   python scripts/seed_demo_state.py
+   ```
+2. Navigate to **Kin Escalation Queue** (`pages/5_Escalation_Queue.py`):
+   - Explain: *When an overdue patient is unreachable after direct outreach (≥10 days since patient attempt), contacting a third party (kin/caregiver) discloses that the patient is overdue.*
+   - Point out the timing trigger: shows `Last Patient Outreach: 12 days ago` (exceeding the 10-day threshold).
+   - Show the **Kin Consent Hard Gate**:
+     - 2 patients display **✓ KIN OUTREACH AUTHORIZED** with bound contact numbers (`consented_kin_phone`).
+     - 2 patients display **🚫 KIN CONTACT UNAUTHORIZED** and are hard-blocked from dispatch.
+   - Point out **Contact-Bound Consent**: if registration updates the family contact number without patient re-authorization, dispatch is blocked as `"contact changed since consent"`.
+   - Click **"Dispatch Kin Outreach (Mark Kin Escalated)"** on an authorized patient:
+     - Episode state cleanly transitions from `contacted` to `kin_escalated`.
+     - Patient automatically drops out of the candidate queue, preventing duplicate family contact.
 
 ---
 

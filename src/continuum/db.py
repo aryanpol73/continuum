@@ -76,3 +76,15 @@ def init_db(drop_existing: bool = False) -> None:
     if drop_existing:
         Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
+
+    # Lightweight schema migration for SQLite if columns are missing
+    if not drop_existing and engine.name == "sqlite":
+        with engine.connect() as conn:
+            cursor = conn.connection.cursor()
+            existing_cols = [c[1] for c in cursor.execute("PRAGMA table_info(consents)").fetchall()]
+            if existing_cols:
+                if "consented_kin_name" not in existing_cols:
+                    cursor.execute("ALTER TABLE consents ADD COLUMN consented_kin_name VARCHAR(128)")
+                if "consented_kin_phone" not in existing_cols:
+                    cursor.execute("ALTER TABLE consents ADD COLUMN consented_kin_phone VARCHAR(32)")
+            cursor.close()

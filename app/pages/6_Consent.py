@@ -67,6 +67,10 @@ with Session() as db:
                 value=consent.kin_consent,
                 help="Authorizes clinic staff to contact primary relative if patient is unresponsive."
             )
+            if patient.kin_name or patient.kin_phone:
+                st.caption(f"Registered Kin: **{patient.kin_name or 'N/A'}** ({patient.kin_relation or 'Relative'}) &bull; `{patient.kin_phone or 'No phone'}`")
+            if consent.kin_consent and consent.consented_kin_phone:
+                st.caption(f"🔒 Bound Contact: **{consent.consented_kin_name or patient.kin_name}** (`{consent.consented_kin_phone}`)")
 
         with col2:
             lang_options = ["mr", "hi", "en"]
@@ -84,7 +88,14 @@ with Session() as db:
         if save_btn:
             try:
                 set_patient_opt_out(db, patient.id, opt_out=opt_out_val, user=user_name)
-                set_kin_consent(db, patient.id, kin_consent=kin_val, user=user_name)
+                set_kin_consent(
+                    db,
+                    patient.id,
+                    kin_consent=kin_val,
+                    user=user_name,
+                    consented_kin_name=patient.kin_name if kin_val else None,
+                    consented_kin_phone=patient.kin_phone if kin_val else None
+                )
                 db.refresh(patient)  # pick up the row consent helpers created
                 if patient.consent:
                     patient.consent.preferred_language = lang

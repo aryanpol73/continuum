@@ -48,6 +48,8 @@ class Consent(Base):
     
     # Hard gate applies strictly to kin escalation (disclosing to a third party)
     kin_consent = Column(Boolean, default=False, nullable=False, index=True)
+    consented_kin_name = Column(String(128), nullable=True)
+    consented_kin_phone = Column(String(32), nullable=True)
     
     preferred_language = Column(String(16), default="mr", nullable=False)  # 'mr', 'hi', 'en'
     source = Column(String(64), default="REGISTRATION_MASTER", nullable=False)

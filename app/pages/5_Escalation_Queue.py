@@ -50,6 +50,7 @@ with Session() as db:
                     st.markdown(f"**Kin Mobile:** `{row['kin_phone']}`")
                     st.markdown(f"**Flag Reason:** {row['reason']} &bull; **Due Date:** {row['due_date']}")
                     st.markdown(f"**Days Overdue:** `{row['max_overdue_days']}` days")
+                    st.markdown(f"**Last Patient Outreach:** `{row.get('last_patient_attempt', 'N/A')}` ({row.get('days_since_patient_attempt', 0)} days ago)")
                     
                     st.markdown(
                         f"""
@@ -74,11 +75,10 @@ with Session() as db:
                     if not row["kin_consent_allowed"]:
                         st.error(f"⚠️ {row['consent_reason']}\n\nReaching out to a relative without explicit consent violates clinical privacy. To enable, update consent in the Consent Registry.")
                     else:
-                        if row["status"] != "contacted":
-                            if st.button("Mark 'Contacted Kin'", key=f"btn_move_esc_{row['episode_id']}"):
-                                ok, msg = escalate_episode_to_kin(db, row["episode_id"], user="care_coordinator")
-                                if ok:
-                                    st.success(msg)
-                                    st.rerun()
-                                else:
-                                    st.error(msg)
+                        if st.button("Dispatch Kin Outreach (Mark Kin Escalated)", key=f"btn_move_esc_{row['episode_id']}", type="primary"):
+                            ok, msg = escalate_episode_to_kin(db, row["episode_id"], user="care_coordinator")
+                            if ok:
+                                st.success(msg)
+                                st.rerun()
+                            else:
+                                st.error(msg)

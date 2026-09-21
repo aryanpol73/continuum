@@ -23,8 +23,8 @@ thresholds:
   followup_grace_days: 7
   # Grace period (days) after medication supply runs out before flagging as REFILL_GAP
   refill_buffer_days: 7
-  # Days overdue without patient response before qualifying for Kin Escalation
-  unresponsive_days_for_escalation: 7
+  # Days since last patient outreach attempt before qualifying for Kin Escalation
+  days_since_last_patient_attempt: 10
   # HbA1c test interval in days
   hba1c_milestone_interval_days: 90
   # Duplicate record fuzzy matching threshold

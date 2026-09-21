@@ -37,9 +37,10 @@ def get_retention_funnel_metrics(db: Session) -> Dict[str, Any]:
     returned = db.query(Episode).filter(Episode.status == EpisodeStatus.RETURNED.value).count()
     unreachable = db.query(Episode).filter(Episode.status == EpisodeStatus.UNREACHABLE.value).count()
     opted_out = db.query(Episode).filter(Episode.status == EpisodeStatus.OPTED_OUT.value).count()
+    kin_escalated = db.query(Episode).filter(Episode.status == EpisodeStatus.KIN_ESCALATED.value).count()
 
-    # Outreached includes contacted, promised, returned
-    total_engaged = contacted + promised + returned
+    # Outreached includes contacted, kin_escalated, promised, returned
+    total_engaged = contacted + kin_escalated + promised + returned
     return_to_care_rate = round(returned / max(1, total_engaged) * 100, 1)
 
     # Consent summary
@@ -62,7 +63,8 @@ def get_retention_funnel_metrics(db: Session) -> Dict[str, Any]:
             "promised": promised,
             "returned": returned,
             "unreachable": unreachable,
-            "opted_out": opted_out
+            "opted_out": opted_out,
+            "kin_escalated": kin_escalated
         },
         "return_to_care_rate_percent": return_to_care_rate
     }

@@ -6,7 +6,7 @@ Consent governance module:
 """
 
 from __future__ import annotations
-from typing import Tuple
+from typing import Tuple, Optional
 from sqlalchemy.orm import Session
 
 from src.continuum.models import Consent, Patient
@@ -75,25 +75,49 @@ def set_kin_consent(
     db: Session,
     patient_id: int,
     kin_consent: bool,
-    user: str = "care_coordinator"
+    user: str = "care_coordinator",
+    consented_kin_name: Optional[str] = None,
+    consented_kin_phone: Optional[str] = None,
 ) -> Consent:
     """
-    Records affirmative patient authorization for caregiver escalation.
+    Records affirmative patient authorization for caregiver escalation,
+    binding consent specifically to the authorized contact details.
     """
     consent = db.query(Consent).filter(Consent.patient_id == patient_id).first()
+    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+
+    if kin_consent:
+        bound_name = consented_kin_name if consented_kin_name is not None else (patient.kin_name if patient else None)
+        bound_phone = consented_kin_phone if consented_kin_phone is not None else (patient.kin_phone if patient else None)
+    else:
+        bound_name = None
+        bound_phone = None
+
     if not consent:
-        consent = Consent(patient_id=patient_id, kin_consent=kin_consent)
+        consent = Consent(
+            patient_id=patient_id,
+            kin_consent=kin_consent,
+            consented_kin_name=bound_name,
+            consented_kin_phone=bound_phone
+        )
         db.add(consent)
     else:
         consent.kin_consent = kin_consent
+        consent.consented_kin_name = bound_name
+        consent.consented_kin_phone = bound_phone
 
     db.commit()
     log_action(
         db,
         action="KIN_CONSENT_CHANGED",
         entity_type="Consent",
-        entity_id=consent.id,
+        entity_id=str(consent.id),
         user=user,
-        details={"patient_id": patient_id, "kin_consent": kin_consent}
+        details={
+            "patient_id": patient_id,
+            "kin_consent": kin_consent,
+            "consented_kin_name": bound_name,
+            "consented_kin_phone": bound_phone
+        }
     )
     return consent

@@ -22,6 +22,7 @@ class EpisodeStatus(str, Enum):
     RETURNED = "returned"
     UNREACHABLE = "unreachable"
     OPTED_OUT = "opted_out"
+    KIN_ESCALATED = "kin_escalated"
 
 
 # Valid FSM transitions
@@ -38,7 +39,8 @@ VALID_TRANSITIONS: Dict[str, Set[str]] = {
         EpisodeStatus.RETURNED.value,
         EpisodeStatus.UNREACHABLE.value,
         EpisodeStatus.OPTED_OUT.value,
-        EpisodeStatus.CONTACTED.value  # repeated contact attempt
+        EpisodeStatus.CONTACTED.value,  # repeated contact attempt
+        EpisodeStatus.KIN_ESCALATED.value
     },
     EpisodeStatus.PROMISED.value: {
         EpisodeStatus.RETURNED.value,
@@ -49,7 +51,14 @@ VALID_TRANSITIONS: Dict[str, Set[str]] = {
     EpisodeStatus.UNREACHABLE.value: {
         EpisodeStatus.CONTACTED.value,
         EpisodeStatus.RETURNED.value,
-        EpisodeStatus.OPTED_OUT.value
+        EpisodeStatus.OPTED_OUT.value,
+        EpisodeStatus.KIN_ESCALATED.value
+    },
+    EpisodeStatus.KIN_ESCALATED.value: {
+        EpisodeStatus.RETURNED.value,
+        EpisodeStatus.UNREACHABLE.value,
+        EpisodeStatus.OPTED_OUT.value,
+        EpisodeStatus.KIN_ESCALATED.value
     },
     EpisodeStatus.RETURNED.value: {
         EpisodeStatus.DETECTED.value   # re-flagged on subsequent overdue cycle

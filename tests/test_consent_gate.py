@@ -6,17 +6,19 @@ Consent governance security tests:
 """
 
 import pytest
-from datetime import date
+from datetime import date, datetime, timedelta
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from src.continuum.db import Base
-from src.continuum.models import Patient, Consent, Episode, Visit
+from src.continuum.config import get_today
+from src.continuum.models import Patient, Consent, Episode, Visit, OutreachLog, AuditLog
+from src.continuum.workflow.states import EpisodeStatus
 from src.continuum.workflow.consent import (
     is_patient_outreach_permitted, verify_kin_consent, set_patient_opt_out, set_kin_consent
 )
 from src.continuum.outreach.render import render_outreach_draft
-from src.continuum.workflow.escalation import escalate_episode_to_kin
+from src.continuum.workflow.escalation import escalate_episode_to_kin, get_kin_escalation_candidates
 
 
 @pytest.fixture
@@ -130,18 +132,17 @@ def test_kin_consent_hard_gate(memory_db):
     
     escalate_ok2, _ = escalate_episode_to_kin(memory_db, ep.id, user="tester")
     assert escalate_ok2 is True
+    assert ep.status == EpisodeStatus.KIN_ESCALATED.value
 
 
-def test_kin_escalation_candidates_only_after_direct_attempt(memory_db):
-    """Verifies that newly detected episodes do NOT appear in the kin escalation queue."""
-    from src.continuum.workflow.escalation import get_kin_escalation_candidates
-
+def test_no_outreach_log_means_no_escalation(memory_db):
+    """Verifies that an episode with no patient outreach log cannot be escalated to kin."""
     p = Patient(
-        uh_id="TEST-004",
-        name="Laxman Test",
-        phone="+919822055555",
-        kin_name="Archana Test",
-        kin_phone="+919822066666",
+        uh_id="TEST-ESC-1",
+        name="Sunil Patil",
+        phone="+919822011111",
+        kin_name="Savita Patil",
+        kin_phone="+919822022222",
         kin_relation="Spouse"
     )
     memory_db.add(p)
@@ -149,11 +150,10 @@ def test_kin_escalation_candidates_only_after_direct_attempt(memory_db):
 
     set_kin_consent(memory_db, p.id, kin_consent=True, user="tester")
 
-    # Newly detected episode: patient has NOT been contacted yet
     ep = Episode(
         patient_id=p.id,
         reason="FOLLOWUP_OVERDUE",
-        status="detected",
+        status="contacted",
         due_date=date(2026, 8, 1),
         opened_date=date(2026, 9, 19),
         max_overdue_days=45
@@ -162,16 +162,221 @@ def test_kin_escalation_candidates_only_after_direct_attempt(memory_db):
     memory_db.commit()
 
     candidates = get_kin_escalation_candidates(memory_db)
-    cand_ep_ids = [c["episode_id"] for c in candidates]
-    assert ep.id not in cand_ep_ids, "Newly detected episodes must not jump to kin escalation before direct contact is attempted"
+    cand_ids = [c["episode_id"] for c in candidates]
+    assert ep.id not in cand_ids, "Episodes without a PATIENT outreach log must not qualify for kin escalation"
 
-    # Once coordinator marks them unreachable after trying to call:
-    ep.status = "unreachable"
+
+def test_attempt_5_days_ago_means_no_escalation(memory_db):
+    """Verifies that an outreach attempt made 5 days ago (< 10 day threshold) is skipped."""
+    today = get_today()
+    p = Patient(
+        uh_id="TEST-ESC-2",
+        name="Ramesh Deshmukh",
+        phone="+919822033333",
+        kin_name="Anita Deshmukh",
+        kin_phone="+919822044444",
+        kin_relation="Spouse"
+    )
+    memory_db.add(p)
+    memory_db.flush()
+
+    set_kin_consent(memory_db, p.id, kin_consent=True, user="tester")
+
+    ep = Episode(
+        patient_id=p.id,
+        reason="FOLLOWUP_OVERDUE",
+        status="contacted",
+        due_date=date(2026, 8, 1),
+        opened_date=date(2026, 9, 19),
+        max_overdue_days=45
+    )
+    memory_db.add(ep)
+    memory_db.flush()
+
+    # Attempt logged 5 days ago (less than 10 day threshold)
+    log = OutreachLog(
+        episode_id=ep.id,
+        patient_id=p.id,
+        recipient_type="PATIENT",
+        recipient_phone=p.phone,
+        channel="WHATSAPP",
+        message_body="Reminder",
+        status="SENT",
+        timestamp=datetime.combine(today - timedelta(days=5), datetime.min.time())
+    )
+    memory_db.add(log)
     memory_db.commit()
 
-    candidates_after = get_kin_escalation_candidates(memory_db)
-    cand_after_ids = [c["episode_id"] for c in candidates_after]
-    assert ep.id in cand_after_ids, "Unreachable patient must now appear in the kin escalation queue"
+    candidates = get_kin_escalation_candidates(memory_db)
+    cand_ids = [c["episode_id"] for c in candidates]
+    assert ep.id not in cand_ids, "Patient outreach 5 days ago is within the 10-day waiting threshold and must not escalate"
+
+
+def test_attempt_12_days_ago_with_consent_means_escalation(memory_db):
+    """Verifies that an outreach attempt made 12 days ago (>= 10 days) with affirmative consent escalates successfully."""
+    today = get_today()
+    p = Patient(
+        uh_id="TEST-ESC-3",
+        name="Gajanan Wankhede",
+        phone="+919822055555",
+        kin_name="Mira Wankhede",
+        kin_phone="+919822066666",
+        kin_relation="Spouse"
+    )
+    memory_db.add(p)
+    memory_db.flush()
+
+    set_kin_consent(memory_db, p.id, kin_consent=True, user="tester", consented_kin_name=p.kin_name, consented_kin_phone=p.kin_phone)
+
+    ep = Episode(
+        patient_id=p.id,
+        reason="FOLLOWUP_OVERDUE",
+        status="contacted",
+        due_date=date(2026, 8, 1),
+        opened_date=date(2026, 9, 19),
+        max_overdue_days=45
+    )
+    memory_db.add(ep)
+    memory_db.flush()
+
+    # Attempt logged 12 days ago (>= 10 day threshold)
+    log = OutreachLog(
+        episode_id=ep.id,
+        patient_id=p.id,
+        recipient_type="PATIENT",
+        recipient_phone=p.phone,
+        channel="WHATSAPP",
+        message_body="Reminder",
+        status="SENT",
+        timestamp=datetime.combine(today - timedelta(days=12), datetime.min.time())
+    )
+    memory_db.add(log)
+    memory_db.commit()
+
+    candidates = get_kin_escalation_candidates(memory_db)
+    cand_map = {c["episode_id"]: c for c in candidates}
+    assert ep.id in cand_map, "Patient outreach 12 days ago must qualify for kin escalation queue"
+    assert cand_map[ep.id]["kin_consent_allowed"] is True
+    assert cand_map[ep.id]["days_since_patient_attempt"] == 12
+
+    # Transition to kin_escalated
+    ok, msg = escalate_episode_to_kin(memory_db, ep.id, user="tester")
+    assert ok is True
+    assert ep.status == EpisodeStatus.KIN_ESCALATED.value
+
+
+def test_mismatched_kin_phone_is_blocked(memory_db):
+    """Verifies that if patient's kin phone differs from consented kin phone, escalation is strictly blocked."""
+    today = get_today()
+    p = Patient(
+        uh_id="TEST-ESC-4",
+        name="Vijay Joshi",
+        phone="+919822077777",
+        kin_name="Anand Joshi",
+        kin_phone="+919822088888",
+        kin_relation="Brother"
+    )
+    memory_db.add(p)
+    memory_db.flush()
+
+    # Consent granted for a DIFFERENT phone (+919822099999)
+    set_kin_consent(
+        memory_db,
+        p.id,
+        kin_consent=True,
+        user="tester",
+        consented_kin_name="Anand Joshi",
+        consented_kin_phone="+919822099999"
+    )
+
+    ep = Episode(
+        patient_id=p.id,
+        reason="REFILL_GAP",
+        status="contacted",
+        due_date=date(2026, 8, 1),
+        opened_date=date(2026, 9, 19),
+        max_overdue_days=45
+    )
+    memory_db.add(ep)
+    memory_db.flush()
+
+    log = OutreachLog(
+        episode_id=ep.id,
+        patient_id=p.id,
+        recipient_type="PATIENT",
+        recipient_phone=p.phone,
+        channel="WHATSAPP",
+        message_body="Reminder",
+        status="SENT",
+        timestamp=datetime.combine(today - timedelta(days=12), datetime.min.time())
+    )
+    memory_db.add(log)
+    memory_db.commit()
+
+    candidates = get_kin_escalation_candidates(memory_db)
+    cand_map = {c["episode_id"]: c for c in candidates}
+    assert ep.id in cand_map
+    assert cand_map[ep.id]["kin_consent_allowed"] is False
+    assert cand_map[ep.id]["consent_reason"] == "contact changed since consent"
+
+    ok, msg = escalate_episode_to_kin(memory_db, ep.id, user="tester")
+    assert ok is False
+    assert "contact changed since consent" in msg
+
+    # Audit log check
+    audit = (
+        memory_db.query(AuditLog)
+        .filter(AuditLog.action == "KIN_ESCALATION_BLOCKED", AuditLog.entity_id == str(ep.id))
+        .order_by(AuditLog.id.desc())
+        .first()
+    )
+    assert audit is not None
+    assert "contact changed since consent" in audit.details_json
+
+
+def test_kin_escalated_episodes_do_not_reappear_in_queue(memory_db):
+    """Verifies that an episode once escalated to kin (status=kin_escalated) does not reappear in the queue."""
+    today = get_today()
+    p = Patient(
+        uh_id="TEST-ESC-5",
+        name="Nitin Kale",
+        phone="+919822012121",
+        kin_name="Sneha Kale",
+        kin_phone="+919822034343",
+        kin_relation="Daughter"
+    )
+    memory_db.add(p)
+    memory_db.flush()
+
+    set_kin_consent(memory_db, p.id, kin_consent=True, user="tester", consented_kin_name=p.kin_name, consented_kin_phone=p.kin_phone)
+
+    ep = Episode(
+        patient_id=p.id,
+        reason="FOLLOWUP_OVERDUE",
+        status=EpisodeStatus.KIN_ESCALATED.value,  # Already escalated
+        due_date=date(2026, 8, 1),
+        opened_date=date(2026, 9, 19),
+        max_overdue_days=45
+    )
+    memory_db.add(ep)
+    memory_db.flush()
+
+    log = OutreachLog(
+        episode_id=ep.id,
+        patient_id=p.id,
+        recipient_type="PATIENT",
+        recipient_phone=p.phone,
+        channel="WHATSAPP",
+        message_body="Reminder",
+        status="SENT",
+        timestamp=datetime.combine(today - timedelta(days=15), datetime.min.time())
+    )
+    memory_db.add(log)
+    memory_db.commit()
+
+    candidates = get_kin_escalation_candidates(memory_db)
+    cand_ids = [c["episode_id"] for c in candidates]
+    assert ep.id not in cand_ids, "Kin escalated episodes must not reappear in the candidate queue"
 
 
 def test_kin_escalation_template_sanitized():
