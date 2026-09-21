@@ -85,7 +85,9 @@ with Session() as db:
             try:
                 set_patient_opt_out(db, patient.id, opt_out=opt_out_val, user=user_name)
                 set_kin_consent(db, patient.id, kin_consent=kin_val, user=user_name)
-                consent.preferred_language = lang
+                db.refresh(patient)  # pick up the row consent helpers created
+                if patient.consent:
+                    patient.consent.preferred_language = lang
                 db.commit()
                 st.success("Communication preferences updated and logged in audit trail!")
                 st.rerun()

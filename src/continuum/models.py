@@ -196,3 +196,34 @@ class UploadedReport(Base):
     labelled_as = Column(String(64), nullable=True, index=True)
     source = Column(String(64), default="In-house")
 
+
+class ClinicProfile(Base):
+    __tablename__ = "clinic_profile"
+
+    id = Column(Integer, primary_key=True, default=1)
+    clinic_name = Column(String(200), default="Continuum Demo Clinic")
+    doctor_name = Column(String(200), default="Dr. [Name]")
+    clinic_phone = Column(String(20), default="+91 90000 00000")
+    clinic_city = Column(String(100), default="Akola")
+    default_language = Column(String(5), default="mr")
+    is_configured = Column(Boolean, default=False)
+
+
+def get_clinic_profile(db) -> ClinicProfile:
+    p = db.query(ClinicProfile).first()
+    if not p:
+        p = ClinicProfile(
+            id=1,
+            clinic_name="Continuum Demo Clinic",
+            doctor_name="Dr. [Name]",
+            clinic_phone="+91 90000 00000",
+            clinic_city="Akola",
+            default_language="mr",
+            is_configured=False
+        )
+        db.add(p)
+        db.commit()
+        db.refresh(p)
+    return p
+
+

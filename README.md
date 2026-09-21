@@ -151,6 +151,7 @@ continuum/
 ├── app/
 │   ├── Home.py                  # Dashboard overview & time-travel controller
 │   ├── pages/
+│   │   ├── 0_Clinic_Setup.py    # Hospital identity & zero-code OPD configuration
 │   │   ├── 1_Worklist.py        # Care coordinator priority worklist
 │   │   ├── 2_Patient_Detail.py  # 360° longitudinal patient view
 │   │   ├── 3_Duplicate_Review.py# Deduplication resolution workbench

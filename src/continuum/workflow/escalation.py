@@ -25,7 +25,7 @@ def get_kin_escalation_candidates(db: Session) -> List[Dict[str, Any]]:
 
     episodes = db.query(Episode).filter(
         Episode.max_overdue_days >= threshold_days,
-        Episode.status.in_([EpisodeStatus.DETECTED.value, EpisodeStatus.CONTACTED.value, EpisodeStatus.UNREACHABLE.value])
+        Episode.status.in_([EpisodeStatus.CONTACTED.value, EpisodeStatus.UNREACHABLE.value])
     ).order_by(Episode.max_overdue_days.desc()).all()
 
     candidates = []

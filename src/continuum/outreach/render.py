@@ -9,7 +9,7 @@ from typing import Dict, Any, Tuple, Optional
 from sqlalchemy.orm import Session
 
 from src.continuum.config import get_template, get_settings, get_today
-from src.continuum.models import Patient, Episode, Visit, Prescription, OutreachLog
+from src.continuum.models import Patient, Episode, Visit, Prescription, OutreachLog, get_clinic_profile
 from src.continuum.workflow.consent import is_patient_outreach_permitted, verify_kin_consent
 from src.continuum.outreach.whatsapp import build_whatsapp_link
 from src.continuum.audit import log_action
@@ -69,10 +69,14 @@ def render_outreach_draft(
     lang_dict = template_data.get("languages", {})
     lang_data = lang_dict.get(pref_lang) or lang_dict.get("mr") or lang_dict.get("en", {})
 
-    doctor_name = clinic_info.get("doctor_name", "Dr. Ashwin Sadavarte")
+    profile = get_clinic_profile(db)
+    clinic_name = profile.clinic_name or "Continuum Demo Clinic"
+    doctor_name = profile.doctor_name or "Dr. [Name]"
+    clinic_phone = profile.clinic_phone or "+91 90000 00000"
+
     if ep.visit_id:
         v = db.query(Visit).filter(Visit.id == ep.visit_id).first()
-        if v and v.doctor_name:
+        if v and v.doctor_name and v.doctor_name.strip():
             doctor_name = v.doctor_name
 
     med_name = ep.first_drug_exhausted or "your regular diabetes medications"
@@ -82,13 +86,13 @@ def render_outreach_draft(
         "patient_name": patient.name,
         "kin_name": patient.kin_name or "Caregiver",
         "relation": patient.kin_relation or "relative",
-        "clinic_name": clinic_info.get("name", "Ramraksha Hospital"),
+        "clinic_name": clinic_name,
         "doctor_name": doctor_name,
         "due_date": str(ep.due_date),
         "refill_due_date": refill_date_str,
         "days_overdue": str(ep.max_overdue_days),
         "medication_name": med_name,
-        "clinic_phone": clinic_info.get("phone", "+919876543210"),
+        "clinic_phone": clinic_phone,
         "appointment_link": clinic_info.get("appointment_link", "https://ramraksha.example.com/book")
     }
 

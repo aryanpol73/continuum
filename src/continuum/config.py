@@ -45,12 +45,6 @@ def get_settings() -> Dict[str, Any]:
     if gemini_key:
         settings["gemini_api_key"] = gemini_key
 
-    clinic_phone = os.getenv("CLINIC_PHONE")
-    if clinic_phone:
-        if "clinic" not in settings:
-            settings["clinic"] = {}
-        settings["clinic"]["phone"] = clinic_phone
-
     return settings
 
 

@@ -2,6 +2,17 @@
 **Target Audience:** Clinical Directors, Diabetologists, and Clinic Operations Teams  
 **Setting:** Ramraksha Clinic & Chronic Care Center  
 
+## Act 0: Multi-Clinic Deployment & Zero-Code Onboarding (30s Wow Moment)
+1. Open **Streamlit Console** (`streamlit run app/Home.py`).
+2. Point out the **Clinic Setup Incomplete** warning banner on the Executive Dashboard:
+   - Notice Continuum starts with neutral demo placeholders (`"Continuum Demo Clinic"`, `"Dr. [Name]"`, `"+91 90000 00000"`).
+3. Click into **Clinic Setup** (`pages/0_Clinic_Setup.py`):
+   - Type the host clinic name: `"Ramraksha Hospital"`, doctor `"Dr. Ashwin Sadavarte"`, phone `"+91 98220 12345"`, city `"Akola"`.
+   - Hit **"Save & Activate Clinic Profile"**.
+4. Return to the dashboard and worklist:
+   - Notice every single template, WhatsApp dispatch link, and call script across Marathi, Hindi, and English dynamically updates in real-time.
+   - *Key takeaway for judges*: Continuum is not hardcoded to one facility; any district hospital or private clinic can deploy it in 30 seconds with zero IT integration.
+
 ---
 
 ## Act 1: The Outpatient Reality & Cohort Selection

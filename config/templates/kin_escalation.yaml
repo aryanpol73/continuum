@@ -4,28 +4,25 @@ category: "CAREGIVER_ESCALATION"
 
 languages:
   en:
-    subject: "Care Continuity Notice regarding {patient_name} - Ramraksha Clinic"
+    subject: "Care Continuity Notice regarding {patient_name} - {clinic_name}"
     body: >-
       Namaste {kin_name} ji. We are reaching out from {clinic_name} regarding {patient_name} ({relation}).
-      As their registered care partner on file, we wished to inform you that their routine follow-up with {doctor_name} is overdue by {days_overdue} days, and our direct reminder messages could not reach them.
-      Unmonitored diabetes can lead to silent health complications.
-      Could you kindly assist {patient_name} ji in scheduling their health checkup? Please call our desk at {clinic_phone}.
+      As their registered care contact on file, we wished to inform you that their scheduled follow-up with {doctor_name} is overdue by {days_overdue} days, and our direct reminder messages could not reach them.
+      Could you kindly assist {patient_name} ji in scheduling their review? Please call our desk at {clinic_phone}.
     call_to_action: "Contact Clinic Desk"
 
   hi:
-    subject: "{patient_name} के स्वास्थ्य परामर्श हेतु महत्वपूर्ण सूचना - रामरक्षा क्लिनिक"
+    subject: "{patient_name} के स्वास्थ्य परामर्श हेतु महत्वपूर्ण सूचना - {clinic_name}"
     body: >-
       नमस्ते {kin_name} जी। हम {patient_name} जी ({relation}) के संदर्भ में {clinic_name} से संपर्क कर रहे हैं।
       रिकॉर्ड के अनुसार, {doctor_name} के साथ उनका नियमित स्वास्थ्य परामर्श {days_overdue} दिनों से लंबित है, और सीधे संपर्क के प्रयास असफल रहे हैं।
-      मधुमेह में नियमित जांच अत्यंत महत्वपूर्ण है।
-      कृपया {patient_name} जी को समय पर परामर्श लेने में सहायता करें। सहायता के लिए हमारे क्लिनिक नंबर {clinic_phone} पर संपर्क करें।
+      कृपया {patient_name} जी को समय पर परामर्श लेने में सहायता करें। अधिक जानकारी के लिए हमारे क्लिनिक नंबर {clinic_phone} पर संपर्क करें।
     call_to_action: "क्लिनिक से संपर्क करें"
 
   mr:
-    subject: "{patient_name} यांच्या आरोग्य तपासणीबाबत महत्त्वाची सूचना - रामरक्षा क्लिनिक"
+    subject: "{patient_name} यांच्या आरोग्य तपासणीबाबत महत्त्वाची सूचना - {clinic_name}"
     body: >-
       सस्नेह नमस्कार {kin_name} जी. आम्ही {patient_name} जी ({relation}) यांच्या संदर्भात {clinic_name} तर्फे संपर्क साधत आहोत.
       त्यांचे {doctor_name} यांच्याकडील नियमित आरोग्य फॉलो-अप {days_overdue} दिवसांपासून प्रलंबित आहे, आणि थेट संपर्क होऊ शकलेला नाही.
-      मधुमेहाच्या योग्य व्यवस्थापनासाठी नियमित तपासणी अत्यावश्यक आहे.
       कृपया {patient_name} जी यांना वेळेवर तपासणी करून घेण्यासाठी सहकार्य करावे. अधिक माहितीसाठी {clinic_phone} वर संपर्क साधा.
     call_to_action: "क्लिनिकशी संपर्क साधा"

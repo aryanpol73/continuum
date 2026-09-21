@@ -14,6 +14,7 @@ if str(ROOT_DIR) not in sys.path:
 
 from src.continuum.config import get_today, set_today_override, get_settings
 from src.continuum.db import get_session_factory, init_db
+from src.continuum.models import get_clinic_profile
 from src.continuum.metrics.report import get_retention_funnel_metrics
 from src.continuum.workflow.episodes import generate_episodes_from_rules
 from src.continuum.engine.cohort import update_all_visits_cohort
@@ -63,8 +64,15 @@ st.markdown("""
 init_db()
 
 settings = get_settings()
-clinic = settings.get("clinic", {})
 current_today = get_today()
+
+Session = get_session_factory()
+with Session() as db:
+    profile = get_clinic_profile(db)
+    clinic_name_val = profile.clinic_name
+    doctor_name_val = profile.doctor_name
+    clinic_phone_val = profile.clinic_phone
+    is_configured_val = profile.is_configured
 
 # Sidebar: Time Anchor (Time-Travel Simulation Controller)
 st.sidebar.title("🩺 Continuum")
@@ -93,9 +101,17 @@ with col_t2:
         st.rerun()
 
 st.sidebar.markdown("---")
-st.sidebar.markdown(f"**Hospital:** {clinic.get('name', 'Ramraksha Hospital')}")
-st.sidebar.markdown(f"**Consultant:** {clinic.get('doctor_name', 'Dr. Ashwin Sadavarte')}")
-st.sidebar.markdown(f"**Desk Phone:** `{clinic.get('phone', '+919876543210')}`")
+st.sidebar.markdown(f"**Hospital:** {clinic_name_val}")
+st.sidebar.markdown(f"**Consultant:** {doctor_name_val}")
+st.sidebar.markdown(f"**Desk Phone:** `{clinic_phone_val}`")
+if not is_configured_val:
+    st.sidebar.warning("Demo Mode: Unconfigured")
+
+if not is_configured_val:
+    st.warning(
+        "⚙️ **Clinic Setup Incomplete:** Continuum is running with neutral demo placeholders. "
+        "Open **0_Clinic_Setup** in the sidebar to configure your hospital name, doctor, and desk phone live."
+    )
 
 # Main Header Banner
 st.markdown(
@@ -105,7 +121,7 @@ st.markdown(
             <div>
                 <h1 style="margin: 0; font-size: 1.8rem; color: #38bdf8;">Continuum — Ambulatory Chronic Care</h1>
                 <p style="margin: 6px 0 0 0; color: #94a3b8; font-size: 1.05rem;">
-                    {clinic.get('name', 'Ramraksha Hospital')} &bull; {clinic.get('doctor_name', 'Dr. Ashwin Sadavarte')}
+                    {clinic_name_val} &bull; {doctor_name_val}
                 </p>
             </div>
             <div style="text-align: right;">
@@ -119,7 +135,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-Session = get_session_factory()
 with Session() as db:
     metrics = get_retention_funnel_metrics(db)
 
