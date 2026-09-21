@@ -1,0 +1,110 @@
+# Ramraksha Hospital (Akola) Column Header Mapping Configuration
+
+patient:
+  uh_id:
+    - "UH_ID"
+    - "UHID"
+  first_name:
+    - "F"
+    - "First Name"
+  middle_name:
+    - "M"
+    - "Middle Name"
+  last_name:
+    - "L"
+    - "Last Name"
+  name:
+    - "Patient Name"
+    - "Name"
+    - "Full Name"
+  phone:
+    - "Mobile1"
+    - "Mobile"
+    - "Phone"
+  gender:
+    - "Sex"
+    - "Gender"
+  age:
+    - "Age"
+  city:
+    - "CityPlace"
+    - "City"
+  district:
+    - "District"
+  dob:
+    - "BirthDate"
+    - "DOB"
+  consultant:
+    - "Consultant"
+    - "Doctor"
+  language:
+    - "PrintLanguage"
+    - "Language"
+  reg_date:
+    - "RegDate"
+
+visit:
+  opd_id:
+    - "OPD_ID"
+  uh_id:
+    - "UH_ID"
+    - "UHID"
+  visit_date:
+    - "OPDDate"
+    - "Visit Date"
+  consultant:
+    - "Consultant"
+    - "Doctor"
+  charges:
+    - "TotalCharges"
+  followup_after_days:
+    - "FollowUpAfterDays"
+  followup_date:
+    - "FollowUpDate"
+
+note:
+  opd_id:
+    - "OPD_ID"
+  uh_id:
+    - "UH_ID"
+  diagnosis:
+    - "Diagnosis"
+  complaints:
+    - "Complaints"
+  bp:
+    - "BP"
+
+prescription:
+  rx_line_id:
+    - "RxLineID"
+  opd_id:
+    - "OPD_ID"
+  uh_id:
+    - "UH_ID"
+  visit_date:
+    - "RxDate"
+  medication_name:
+    - "DrugName"
+    - "Medication"
+  quantity:
+    - "Qty"
+  raw_dose:
+    - "Dose"
+  when:
+    - "When"
+
+consent:
+  uh_id:
+    - "UH_ID"
+  preferred_language:
+    - "PreferredLanguage"
+  kin_name:
+    - "KinName"
+  kin_relation:
+    - "KinRelation"
+  kin_phone:
+    - "KinMobile"
+  escalation_consent:
+    - "EscalationConsent"
+  opt_out:
+    - "OptOut"

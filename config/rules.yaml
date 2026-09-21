@@ -1,0 +1,71 @@
+# Continuum Clinical Rules & Dosing Patterns
+# Standardized across generator, engine, and scoring harness
+
+grace_periods:
+  followup_grace_days: 7
+  refill_grace_days: 7
+
+dosing_patterns:
+  numeric_patterns:
+    "1-0-0": 1.0
+    "0-1-0": 1.0
+    "0-0-1": 1.0
+    "1-0-1": 2.0
+    "1-1-0": 2.0
+    "0-1-1": 2.0
+    "1-1-1": 3.0
+    "2-0-2": 4.0
+    "1/2-0-1/2": 1.0
+    "1-0-1/2": 1.5
+
+  abbreviations:
+    "OD": 1.0
+    "ONCE DAILY": 1.0
+    "BD": 2.0
+    "BID": 2.0
+    "TWICE DAILY": 2.0
+    "TDS": 3.0
+    "TID": 3.0
+    "THRICE DAILY": 3.0
+    "QID": 4.0
+    "HS": 1.0
+    "AT BEDTIME": 1.0
+    "SOS": 0.0
+    "PRN": 0.0
+
+cohort_rules:
+  condition: "DIABETES_MELLITUS"
+  include_patterns:
+    - "\\b(T2DM|T1DM|DM|NIDDM|IDDM|DM-2|DM2|DM\\s+TYPE\\s+2|K/C/O\\s+DM)\\b"
+    - "\\bDIABETES(\\s+MELLITUS)?\\b"
+    - "\\bDIABETIC\\b"
+    - "\\bWALAPHAGE|ZORYL|GLYCIPHAGE|ISTAMET|ALSITA|TRIVOLIB|DAPANORM|GLUCONORM|VOGLIBOSE|METFORMIN|JARDIANCE\\b"
+    - "\\bHYPERGLYCEMIA\\b"
+    - "\\bHBA1C\\b"
+
+  exclude_patterns:
+    - "\\bDIABETES\\s+INSIPIDUS\\b"
+    - "\\bRULED?\\s*OUT\\s+DIABETES\\b"
+    - "\\bNON-?DIABETIC\\b"
+
+chronic_medications:
+  diabetes:
+    - "WALAPHAGE G2"
+    - "ZORYL M2"
+    - "GLYCIPHAGE SR 1000"
+    - "ISTAMET 50/500"
+    - "ALSITA MP (100/15/500)"
+    - "TRIVOLIB 2"
+    - "DAPANORM 10"
+    - "GLUCONORM G1"
+    - "VOGLIBOSE 0.3"
+    - "Metformin"
+    - "Glycomet"
+    - "Glimepiride"
+    - "Jalra"
+    - "Januvia"
+    - "Janumet"
+    - "Jardiance"
+    - "Forxiga"
+    - "Insulin"
+    - "Lantus"

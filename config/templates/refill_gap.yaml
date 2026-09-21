@@ -1,0 +1,31 @@
+# Medication Refill Reminder Templates
+template_id: "refill_gap"
+category: "MEDICATION_REFILL"
+
+languages:
+  en:
+    subject: "Medication Refill Alert from Ramraksha Clinic"
+    body: >-
+      Namaste {patient_name} ji. Greetings from {clinic_name}.
+      According to your last prescription from {doctor_name}, your regular supply for {medication_name} is calculated to run out around {refill_due_date}.
+      Abruptly discontinuing chronic diabetes medications can cause sudden blood sugar spikes.
+      Please replenish your prescribed medicines in time, or contact our pharmacy desk at {clinic_phone} if you need a repeat prescription.
+    call_to_action: "Request Refill"
+
+  hi:
+    subject: "दवाई रिफिल सूचना - रामरक्षा क्लिनिक"
+    body: >-
+      नमस्ते {patient_name} जी। {clinic_name} की ओर से सादर प्रणाम।
+      {doctor_name} के पर्चे के अनुसार, आपकी नियमित दवाई {medication_name} का स्टॉक {refill_due_date} के आसपास समाप्त होने का अनुमान है।
+      मधुमेह की दवाइयों में गैप आने से ब्लड शुगर का स्तर बढ़ सकता है।
+      कृपया समय पर अपनी दवाइयां ले लें अथवा नया पर्चा प्राप्त करने के लिए हमारे क्लिनिक के नंबर {clinic_phone} पर संपर्क करें।
+    call_to_action: "दवाई रिफिल करें"
+
+  mr:
+    subject: "औषध साठा संपण्याबाबत सूचना - रामरक्षा क्लिनिक"
+    body: >-
+      सस्नेह नमस्कार {patient_name} जी. {clinic_name} कडून सस्नेह संदेश.
+      {doctor_name} यांच्या मागील प्रिस्क्रिप्शननुसार, आपले नियमित औषध {medication_name} चा साठा सुमारे {refill_due_date} रोजी संपण्याचा अंदाज आहे.
+      मधुमेहाच्या औषधांमध्ये खंड पडल्यास रक्तातील साखरेचे प्रमाण अचानक वाढू शकते.
+      कृपया औषधांचा साठा वेळेवर भरून घ्यावा किंवा क्लिनिकच्या {clinic_phone} या क्रमांकावर संपर्क साधावा.
+    call_to_action: "औषध साठा पुन्हा घ्या"

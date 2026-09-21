@@ -1,0 +1,31 @@
+# Continuum System Configuration
+
+# Time travel anchor date matching the clinic simulation
+today_override: "2026-09-19"
+
+clinic:
+  name: "Ramraksha Hospital (Akola)"
+  doctor_name: "Dr. Ashwin Sadavarte"
+  doctor_qualification: "MBBS, MD (Medicine), Diabetologist"
+  phone: "+919876543210"
+  address: "Ramraksha Hospital, Station Road, Akola, Maharashtra 444001"
+  timings: "Mon-Sat: 9:00 AM - 1:00 PM, 5:00 PM - 8:30 PM"
+  appointment_link: "https://ramraksha.example.com/book"
+
+paths:
+  db_url: "sqlite:///data/continuum.db"
+  data_dir: "data"
+  raw_dir: "data/raw"
+  uploads_dir: "data/uploads"
+
+thresholds:
+  # Grace period (days) after review date before flagging as FOLLOWUP_OVERDUE
+  followup_grace_days: 7
+  # Grace period (days) after medication supply runs out before flagging as REFILL_GAP
+  refill_buffer_days: 7
+  # Days overdue without patient response before qualifying for Kin Escalation
+  unresponsive_days_for_escalation: 7
+  # HbA1c test interval in days
+  hba1c_milestone_interval_days: 90
+  # Duplicate record fuzzy matching threshold
+  duplicate_match_score_threshold: 0.85

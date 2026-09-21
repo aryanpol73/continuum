@@ -1,0 +1,31 @@
+# Follow-up Overdue Outreach Templates
+template_id: "followup_overdue"
+category: "CLINICAL_FOLLOWUP"
+
+languages:
+  en:
+    subject: "Follow-up Reminder from Ramraksha Clinic"
+    body: >-
+      Namaste {patient_name} ji. This is a gentle reminder from {clinic_name}. 
+      According to your records with {doctor_name}, your regular health review was due on {due_date} ({days_overdue} days ago).
+      Regular check-ups are essential to keep your sugar levels in safe control and prevent complications.
+      Please call us at {clinic_phone} or visit {appointment_link} to schedule your review consultation. Stay healthy!
+    call_to_action: "Book Follow-up"
+
+  hi:
+    subject: "रामरक्षा क्लिनिक से फॉलो-अप परामर्श रिमाइंडर"
+    body: >-
+      नमस्ते {patient_name} जी। यह {clinic_name} से एक विनम्र स्मरण पत्र है।
+      {doctor_name} के साथ आपका नियमित स्वास्थ्य परामर्श {due_date} को देय था ({days_overdue} दिन पहले)।
+      शुगर को नियंत्रित रखने और स्वास्थ्य संबंधी जटिलताओं से बचने के लिए समय पर जांच अत्यंत आवश्यक है।
+      कृपया अपनी अगली विजिट तय करने हेतु {clinic_phone} पर संपर्क करें या {appointment_link} पर जाएं।
+    call_to_action: "परामर्श बुक करें"
+
+  mr:
+    subject: "रामरक्षा क्लिनिककडून पाठपुरावा तपासणी स्मरणपत्र"
+    body: >-
+      सस्नेह नमस्कार {patient_name} जी. {clinic_name} तर्फे हे एक नम्र स्मरणपत्र आहे.
+      {doctor_name} यांच्याकडील नोंदीनुसार, तुमची नियमित आरोग्य तपासणी {due_date} रोजी होणे अपेक्षित होते ({days_overdue} दिवस उलटून गेले आहेत).
+      मधुमेह नियंत्रणात ठेवण्यासाठी आणि संभाव्य त्रास टाळण्यासाठी नियमित पाठपुरावा अत्यंत आवश्यक आहे.
+      कृपया पुढील भेटीसाठी {clinic_phone} वर संपर्क साधा किंवा {appointment_link} ला भेट द्या.
+    call_to_action: "तपासणी निश्चित करा"
