@@ -16,10 +16,12 @@ if str(ROOT_DIR) not in sys.path:
 from src.continuum.db import get_session_factory
 from src.continuum.models import get_clinic_profile
 from src.continuum.audit import log_action
+from app.components.style import apply_theme
 
 st.set_page_config(page_title="Clinic Setup | Continuum", page_icon="🏥", layout="wide")
+apply_theme()
 
-st.title("🏥 Clinic Profile & OPD Configuration")
+st.title("Clinic Profile & OPD Configuration")
 st.caption("Configure hospital identity, treating diabetologist, and contact numbers. Seamless zero-code deployment to any OPD.")
 
 Session = get_session_factory()

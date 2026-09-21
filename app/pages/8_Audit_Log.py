@@ -14,10 +14,12 @@ if str(ROOT_DIR) not in sys.path:
 
 from src.continuum.db import get_session_factory
 from src.continuum.models import AuditLog
+from app.components.style import apply_theme
 
 st.set_page_config(page_title="Audit Trail | Continuum", page_icon="📜", layout="wide")
+apply_theme()
 
-st.title("📜 Compliance & Immutable Audit Trail")
+st.title("Compliance & Immutable Audit Trail")
 st.caption("Complete append-only audit records of every clinical decision, outreach draft, consent change, and system action.")
 
 Session = get_session_factory()

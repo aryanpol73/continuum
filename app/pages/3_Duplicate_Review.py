@@ -15,10 +15,12 @@ if str(ROOT_DIR) not in sys.path:
 from src.continuum.db import get_session_factory
 from src.continuum.models import DuplicateCluster, Patient, Visit, Prescription
 from src.continuum.ingest.dedupe import detect_duplicates, merge_patients, dismiss_duplicate
+from app.components.style import apply_theme
 
 st.set_page_config(page_title="Duplicate Review | Continuum", page_icon="👥", layout="wide")
+apply_theme()
 
-st.title("👥 Duplicate Patient Resolution Workbench")
+st.title("Duplicate Patient Resolution Workbench")
 st.caption("Human-in-the-loop review for patients sharing identical phone numbers or high name/age similarity.")
 
 Session = get_session_factory()

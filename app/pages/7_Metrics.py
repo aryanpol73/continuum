@@ -15,10 +15,12 @@ if str(ROOT_DIR) not in sys.path:
 
 from src.continuum.db import get_session_factory
 from src.continuum.metrics.report import get_retention_funnel_metrics, get_doctor_retention_scorecard
+from app.components.style import apply_theme
 
 st.set_page_config(page_title="Metrics & Retention | Continuum", page_icon="📈", layout="wide")
+apply_theme()
 
-st.title("📈 Care Retention & Closed-Loop Analytics")
+st.title("Care Retention & Closed-Loop Analytics")
 st.caption("Tracking patient return rates, refill gap closures, and consultant scorecards.")
 
 Session = get_session_factory()

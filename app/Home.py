@@ -19,6 +19,7 @@ from src.continuum.metrics.report import get_retention_funnel_metrics
 from src.continuum.workflow.episodes import generate_episodes_from_rules
 from src.continuum.engine.cohort import update_all_visits_cohort
 from src.continuum.engine.dosing import update_all_prescriptions_dosing
+from app.components.style import apply_theme
 
 st.set_page_config(
     page_title="Continuum | Clinical Care Engine",
@@ -26,37 +27,30 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+apply_theme()
 
-# Custom CSS for clean aesthetics
+# Metric card CSS for KPI metrics
 st.markdown("""
 <style>
     .metric-card {
         background-color: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 18px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 16px 18px;
         text-align: center;
     }
     .metric-value {
         font-size: 2.1rem;
         font-weight: 700;
-        color: #0f172a;
+        color: #111827;
         margin: 4px 0;
     }
     .metric-label {
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         font-weight: 600;
-        color: #64748b;
+        color: #6b7280;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    .hero-banner {
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        color: white;
-        padding: 24px;
-        border-radius: 12px;
-        margin-bottom: 24px;
+        letter-spacing: 0.05em;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -113,27 +107,10 @@ if not is_configured_val:
         "Open **0_Clinic_Setup** in the sidebar to configure your hospital name, doctor, and desk phone live."
     )
 
-# Main Header Banner
-st.markdown(
-    f"""
-    <div class="hero-banner">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <h1 style="margin: 0; font-size: 1.8rem; color: #38bdf8;">Continuum — Ambulatory Chronic Care</h1>
-                <p style="margin: 6px 0 0 0; color: #94a3b8; font-size: 1.05rem;">
-                    {clinic_name_val} &bull; {doctor_name_val}
-                </p>
-            </div>
-            <div style="text-align: right;">
-                <span style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid #38bdf8; padding: 6px 14px; border-radius: 20px; font-weight: 600; font-size: 0.9rem;">
-                    📅 SIMULATED TODAY: {current_today}
-                </span>
-            </div>
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+# Header Block
+st.title(clinic_name_val)
+st.subheader(doctor_name_val)
+st.caption(f"Simulated Today: {current_today}")
 
 with Session() as db:
     metrics = get_retention_funnel_metrics(db)

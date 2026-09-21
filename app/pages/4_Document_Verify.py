@@ -21,10 +21,12 @@ from src.continuum.ingest.normalize import normalize_date, normalize_name, norma
 from src.continuum.engine.dosing import process_prescription_dosing
 from src.continuum.engine.cohort import classify_diabetes_diagnosis
 from src.continuum.audit import log_action
+from app.components.style import apply_theme
 
 st.set_page_config(page_title="Document Verify | Continuum", page_icon="📄", layout="wide")
+apply_theme()
 
-st.title("📄 Clinical Document & Prescription Verification")
+st.title("Clinical Document & Prescription Verification")
 st.caption("Multimodal vision extraction with human-in-the-loop verification before committing to clinical records.")
 
 uploads_dir = get_base_dir() / "data" / "uploads"

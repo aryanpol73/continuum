@@ -16,10 +16,12 @@ from src.continuum.db import get_session_factory
 from src.continuum.config import get_today
 from src.continuum.workflow.escalation import get_kin_escalation_candidates, escalate_episode_to_kin
 from app.components.message_editor import render_message_editor
+from app.components.style import apply_theme
 
 st.set_page_config(page_title="Kin Escalation | Continuum", page_icon="🚨", layout="wide")
+apply_theme()
 
-st.title("🚨 Caregiver / Kin Escalation Queue")
+st.title("Caregiver / Kin Escalation Queue")
 st.caption("Outreach center for patients overdue past the escalation threshold. Strictly gated by patient's recorded kin consent.")
 
 Session = get_session_factory()

@@ -15,10 +15,12 @@ from src.continuum.db import get_session_factory
 from src.continuum.models import Patient, Visit, Prescription, Episode, OutreachLog, AuditLog, UploadedReport
 from src.continuum.engine.investigations import get_patient_missing_investigations
 from app.components.patient_card import render_patient_card
+from app.components.style import apply_theme
 
 st.set_page_config(page_title="Patient 360 | Continuum", page_icon="👤", layout="wide")
+apply_theme()
 
-st.title("👤 Patient 360° Longitudinal View")
+st.title("Patient 360° Longitudinal View")
 st.caption("Complete clinical consultation timeline, prescription forecasts, continuum episodes, and communication logs.")
 
 Session = get_session_factory()

@@ -469,7 +469,7 @@ def test_missing_kin_phone_logs_accurate_reason(memory_db):
         .first()
     )
     assert audit is not None
-    assert "no number on file" in audit.details_json
+    assert "no kin contact on file" in audit.details_json
     assert "contact changed since consent" not in audit.details_json
 
 

@@ -14,10 +14,12 @@ if str(ROOT_DIR) not in sys.path:
 from src.continuum.db import get_session_factory
 from src.continuum.models import Patient, Consent, AuditLog
 from src.continuum.workflow.consent import set_patient_opt_out, set_kin_consent
+from app.components.style import apply_theme
 
 st.set_page_config(page_title="Consent Registry | Continuum", page_icon="🔒", layout="wide")
+apply_theme()
 
-st.title("🔒 Patient Opt-Out & Kin Consent Registry")
+st.title("Patient Opt-Out & Kin Consent Registry")
 st.caption("Patient outreach is routine clinical care (permitted unless opted out). Kin contact is strictly gated by affirmative consent.")
 
 Session = get_session_factory()

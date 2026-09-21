@@ -55,7 +55,7 @@ def get_kin_escalation_candidates(db: Session) -> List[Dict[str, Any]]:
         if kin_allowed:
             if not patient.kin_phone:
                 kin_allowed = False
-                reason = "no number on file"
+                reason = "no kin contact on file"
             else:
                 consent = db.query(Consent).filter(Consent.patient_id == patient.id).first()
                 if not consent or patient.kin_phone != consent.consented_kin_phone:
@@ -117,7 +117,7 @@ def escalate_episode_to_kin(
 
     # Contact Check: Ensure a kin / caregiver contact number exists on file
     if not patient.kin_phone:
-        reason = "no number on file"
+        reason = "no kin contact on file"
         log_action(
             db,
             action="KIN_ESCALATION_BLOCKED",
