@@ -12,10 +12,12 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
+import pandas as pd
 from src.continuum.config import get_today, set_today_override, get_settings
 from src.continuum.db import get_session_factory, init_db
 from src.continuum.models import get_clinic_profile
 from src.continuum.metrics.report import get_retention_funnel_metrics
+from src.continuum.metrics.daily import get_daily_snapshot, get_daily_series
 from src.continuum.workflow.episodes import generate_episodes_from_rules
 from src.continuum.engine.cohort import update_all_visits_cohort
 from src.continuum.engine.dosing import update_all_prescriptions_dosing
@@ -88,6 +90,8 @@ render_context_bar()
 
 with Session() as db:
     metrics = get_retention_funnel_metrics(db)
+    snap = get_daily_snapshot(db, current_today)
+    series = get_daily_series(db, current_today, days=30)
 
 # Hero Metric Card (Refill-Only Gaps)
 st.markdown(
@@ -113,6 +117,24 @@ with m4:
     st.metric("Review Overdue", metrics["followup_episodes"])
 with m5:
     st.metric("Returned to Care", metrics["status_counts"]["returned"])
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+# Daily Activity Snapshot & 30-Day Trend
+st.subheader(f"Activity on {current_today}")
+d1, d2, d3, d4 = st.columns(4)
+d1.metric("Expected in OPD", snap["expected_today"])
+d2.metric("Attended", snap["attended_today"])
+d3.metric("Did not attend", snap["no_show_today"])
+d4.metric(
+    "Care lapsed today",
+    snap["lapsed_today"],
+    help="Appointment date or medication supply ran out on this date.",
+)
+
+df_daily = pd.DataFrame(series).set_index("date")
+st.caption("Last 30 days — patients lapsing vs. patients attending")
+st.bar_chart(df_daily[["Lapsed", "Attended"]], height=220)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
