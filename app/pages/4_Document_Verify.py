@@ -60,6 +60,9 @@ if uploaded_file is not None:
         with st.spinner("Analyzing document with clinical OCR vision model..."):
             extracted = extract_prescription_document(save_path)
 
+        if extracted.overall_confidence == 0.0:
+            st.warning("⚠️ No vision API key configured — displaying offline sample extraction.")
+
         st.markdown(
             f"""
             <span style="background: #e0f2fe; color: #0369a1; padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 0.8rem;">
@@ -113,7 +116,7 @@ if uploaded_file is not None:
                         db.add(patient)
                         db.flush()
                         # Default consent
-                        db.add(Consent(patient_id=patient.id, outreach_consent=True, whatsapp_consent=True))
+                        db.add(Consent(patient_id=patient.id, opt_out=False, kin_consent=False))
 
                     # 2. Add Visit
                     visit_d = normalize_date(v_date)

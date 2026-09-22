@@ -51,12 +51,13 @@ with Session() as db:
     with col_chart:
         st.subheader("Closed-Loop Status Distribution")
         df_funnel = pd.DataFrame([
-            {"Stage": "1. Detected", "Count": status_counts["detected"]},
-            {"Stage": "2. Contacted", "Count": status_counts["contacted"]},
-            {"Stage": "3. Promised Visit", "Count": status_counts["promised"]},
-            {"Stage": "4. Returned to Clinic", "Count": status_counts["returned"]},
-            {"Stage": "5. Unreachable", "Count": status_counts["unreachable"]},
-            {"Stage": "6. Opted Out", "Count": status_counts["opted_out"]}
+            {"Stage": "1. Detected", "Count": status_counts.get("detected", 0)},
+            {"Stage": "2. Contacted", "Count": status_counts.get("contacted", 0)},
+            {"Stage": "3. Promised Visit", "Count": status_counts.get("promised", 0)},
+            {"Stage": "4. Returned to Clinic", "Count": status_counts.get("returned", 0)},
+            {"Stage": "5. Kin Escalated", "Count": status_counts.get("kin_escalated", 0)},
+            {"Stage": "6. Unreachable", "Count": status_counts.get("unreachable", 0)},
+            {"Stage": "7. Opted Out", "Count": status_counts.get("opted_out", 0)}
         ])
         st.bar_chart(df_funnel.set_index("Stage"))
 

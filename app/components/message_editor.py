@@ -69,6 +69,14 @@ def render_message_editor(
     with col_b:
         if st.button("Mark Episode as 'Contacted'", key=f"{key_prefix}_mark_contacted_{episode_id}"):
             try:
+                render_outreach_draft(
+                    db=db,
+                    episode_id=episode_id,
+                    recipient_type=recipient_type,
+                    override_language=lang_choice,
+                    user="ui_coordinator",
+                    persist=True
+                )
                 transition_episode(db, episode_id, new_status="contacted", user="ui_coordinator", reason="Outreach dispatched via WhatsApp")
                 st.success("Episode updated to contacted!")
                 st.rerun()

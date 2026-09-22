@@ -62,12 +62,12 @@ def extract_prescription_document(
             pass
 
     # --- Deterministic Offline Extractor ---
-    # Provides realistic extraction data for Ramraksha Clinic documents
+    # Safe sample fallback when no vision API key is configured
     return ExtractedPrescriptionDoc(
-        clinic_name="Ramraksha Clinic & Chronic Care Center",
-        doctor_name="Dr. Vinayak Joshi",
-        patient_name="Suresh Deshmukh",
-        patient_uhid="RAM-2024-00142",
+        clinic_name="SAMPLE — Offline Intake Demo",
+        doctor_name="Dr. [Sample Clinician]",
+        patient_name="Sample Patient",
+        patient_uhid="DEMO-2026-001",
         visit_date="2026-08-10",
         diagnosis="Type 2 Diabetes Mellitus with Mild Neuropathy",
         next_review_date="2026-09-10",
@@ -77,22 +77,22 @@ def extract_prescription_document(
                 dosage_pattern="1-0-1",
                 quantity=60,
                 instructions="Before meals",
-                confidence=0.96
+                confidence=0.0
             ),
             ExtractedMedication(
                 medication_name="Jardiance 10mg",
                 dosage_pattern="1-0-0",
                 quantity=30,
                 instructions="Morning after breakfast",
-                confidence=0.92
+                confidence=0.0
             ),
             ExtractedMedication(
                 medication_name="Telma 40mg",
                 dosage_pattern="0-0-1",
                 quantity=30,
                 instructions="At bedtime",
-                confidence=0.95
+                confidence=0.0
             )
         ],
-        overall_confidence=0.94
+        overall_confidence=0.0
     )

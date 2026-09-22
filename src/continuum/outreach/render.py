@@ -20,7 +20,8 @@ def render_outreach_draft(
     episode_id: int,
     recipient_type: str = "PATIENT",
     override_language: Optional[str] = None,
-    user: str = "care_coordinator"
+    user: str = "care_coordinator",
+    persist: bool = False
 ) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
     """
     Renders a doctor-approved outreach message draft.
@@ -93,7 +94,7 @@ def render_outreach_draft(
         "days_overdue": str(ep.max_overdue_days),
         "medication_name": med_name,
         "clinic_phone": clinic_phone,
-        "appointment_link": clinic_info.get("appointment_link", "https://ramraksha.example.com/book")
+        "appointment_link": clinic_info.get("appointment_link", "https://clinic.example.com/book")
     }
 
     body = lang_data.get("body", "")
@@ -106,36 +107,39 @@ def render_outreach_draft(
 
     wa_url = build_whatsapp_link(recipient_phone, body) if recipient_phone else ""
 
-    # Record drafted message
-    log_entry = OutreachLog(
-        episode_id=ep.id,
-        patient_id=patient.id,
-        recipient_type=recipient_type,
-        recipient_phone=recipient_phone,
-        channel="WHATSAPP",
-        message_body=body,
-        status="DRAFTED",
-        click_to_chat_url=wa_url if is_dispatch_allowed else None
-    )
-    db.add(log_entry)
-    db.commit()
+    log_id = None
+    if persist:
+        # Record drafted message only when explicitly requested
+        log_entry = OutreachLog(
+            episode_id=ep.id,
+            patient_id=patient.id,
+            recipient_type=recipient_type,
+            recipient_phone=recipient_phone,
+            channel="WHATSAPP",
+            message_body=body,
+            status="DRAFTED",
+            click_to_chat_url=wa_url if is_dispatch_allowed else None
+        )
+        db.add(log_entry)
+        db.commit()
 
-    log_action(
-        db,
-        action="OUTREACH_DRAFT_PREPARED",
-        entity_type="OutreachLog",
-        entity_id=log_entry.id,
-        user=user,
-        details={
-            "episode_id": ep.id,
-            "recipient_type": recipient_type,
-            "language": pref_lang,
-            "is_dispatch_allowed": is_dispatch_allowed
-        }
-    )
+        log_action(
+            db,
+            action="OUTREACH_DRAFT_PREPARED",
+            entity_type="OutreachLog",
+            entity_id=log_entry.id,
+            user=user,
+            details={
+                "episode_id": ep.id,
+                "recipient_type": recipient_type,
+                "language": pref_lang,
+                "is_dispatch_allowed": is_dispatch_allowed
+            }
+        )
+        log_id = log_entry.id
 
     return True, "Draft prepared.", {
-        "outreach_log_id": log_entry.id,
+        "outreach_log_id": log_id,
         "recipient_phone": recipient_phone,
         "recipient_type": recipient_type,
         "language": pref_lang,
