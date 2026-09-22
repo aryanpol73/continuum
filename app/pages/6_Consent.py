@@ -86,7 +86,7 @@ with Session() as db:
                 index=lang_options.index(curr_lang),
                 format_func=lambda x: {"mr": "मराठी (Marathi)", "hi": "हिंदी (Hindi)", "en": "English"}[x]
             )
-            user_name = st.text_input("Coordinator / Staff ID", value="Dr. Ashwin Sadavarte / Desk")
+            user_name = st.text_input("Coordinator / Staff ID", value="Care Coordinator")
 
         save_btn = st.form_submit_button("Save Preferences", type="primary")
 

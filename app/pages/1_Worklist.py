@@ -278,7 +278,7 @@ with Session() as db:
                 options=["ALL_ACTIONABLE", "UNDER_90", "91_180", "181_540"],
                 format_func=lambda x: {
                     "ALL_ACTIONABLE": f"All Actionable (≤{actionable_limit}d)",
-                    "UNDER_90": "High Urgency (≤ 90d)",
+                    "UNDER_90": "Recently lapsed (≤ 90d)",
                     "91_180": "Moderate (91 - 180d)",
                     "181_540": "Extended Lapsed (181 - 540d)"
                 }[x],

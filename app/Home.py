@@ -1,6 +1,6 @@
 """
 Continuum — Care Coordinator Portal & Executive Clinical Dashboard.
-Ramraksha Hospital OPD (Akola).
+Ambulatory Follow-up & Refill Engine.
 """
 
 from __future__ import annotations
@@ -144,7 +144,7 @@ with col_left:
         f"""
         Traditional hospital OPD software only tracks the next appointment date.
         
-        In Ramraksha Hospital's records:
+        In {clinic_name_val}'s records:
         - **{metrics['refill_only_episodes']} patients** had medications prescribed for 30 days (e.g. `WALAPHAGE G2` 60 tablets @ 2/day), but their follow-up was scheduled after 60 or 90 days.
         - **Result:** These patients ran out of diabetes medications weeks ago, but appointment-based systems see nothing wrong!
         - Continuum catches every single one by evaluating supply days (`Qty / daily_dose`) across every line of the prescription.
