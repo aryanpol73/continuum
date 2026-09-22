@@ -18,9 +18,12 @@ from app.components.style import apply_theme
 
 st.set_page_config(page_title="Audit Trail | Continuum", page_icon="📜", layout="wide")
 apply_theme()
+from app.components.nav import render_sidebar, render_context_bar
+render_sidebar()
 
 st.title("Compliance & Immutable Audit Trail")
 st.caption("Complete append-only audit records of every clinical decision, outreach draft, consent change, and system action.")
+render_context_bar()
 
 Session = get_session_factory()
 

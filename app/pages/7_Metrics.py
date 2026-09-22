@@ -19,9 +19,12 @@ from app.components.style import apply_theme
 
 st.set_page_config(page_title="Metrics & Retention | Continuum", page_icon="📈", layout="wide")
 apply_theme()
+from app.components.nav import render_sidebar, render_context_bar
+render_sidebar()
 
 st.title("Care Retention & Closed-Loop Analytics")
 st.caption("Tracking patient return rates, refill gap closures, and consultant scorecards.")
+render_context_bar()
 
 Session = get_session_factory()
 

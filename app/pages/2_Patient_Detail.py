@@ -19,9 +19,12 @@ from app.components.style import apply_theme
 
 st.set_page_config(page_title="Patient 360 | Continuum", page_icon="👤", layout="wide")
 apply_theme()
+from app.components.nav import render_sidebar, render_context_bar
+render_sidebar()
 
 st.title("Patient 360° Longitudinal View")
 st.caption("Complete clinical consultation timeline, prescription forecasts, continuum episodes, and communication logs.")
+render_context_bar()
 
 Session = get_session_factory()
 

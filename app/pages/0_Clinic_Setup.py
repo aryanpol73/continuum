@@ -20,9 +20,12 @@ from app.components.style import apply_theme
 
 st.set_page_config(page_title="Clinic Setup | Continuum", page_icon="🏥", layout="wide")
 apply_theme()
+from app.components.nav import render_sidebar, render_context_bar
+render_sidebar()
 
 st.title("Clinic Profile & OPD Configuration")
 st.caption("Configure hospital identity, treating diabetologist, and contact numbers. Seamless zero-code deployment to any OPD.")
+render_context_bar()
 
 Session = get_session_factory()
 

@@ -18,9 +18,12 @@ from app.components.style import apply_theme
 
 st.set_page_config(page_title="Consent Registry | Continuum", page_icon="🔒", layout="wide")
 apply_theme()
+from app.components.nav import render_sidebar, render_context_bar
+render_sidebar()
 
 st.title("Patient Opt-Out & Kin Consent Registry")
 st.caption("Patient outreach is routine clinical care (permitted unless opted out). Kin contact is strictly gated by affirmative consent.")
+render_context_bar()
 
 Session = get_session_factory()
 
@@ -45,7 +48,7 @@ with Session() as db:
         st.stop()
 
     patient_select_map = {f"{p.name} ({p.uh_id}) - {p.phone}": p for p in filtered_patients}
-    selected_label = st.selectbox("Select Patient", options=list(patient_select_map.keys()))
+    selected_label = st.selectbox("Select Patient", options=list(patient_select_map.keys()), key="consent_patient_select")
     patient = patient_select_map[selected_label]
 
     consent = patient.consent
@@ -98,9 +101,10 @@ with Session() as db:
                     consented_kin_name=patient.kin_name if kin_val else None,
                     consented_kin_phone=patient.kin_phone if kin_val else None
                 )
-                db.refresh(patient)  # pick up the row consent helpers created
-                if patient.consent:
-                    patient.consent.preferred_language = lang
+                db.expire_all()
+                consent_obj = db.query(Consent).filter(Consent.patient_id == patient.id).first()
+                if consent_obj:
+                    consent_obj.preferred_language = lang
                 db.commit()
                 st.success("Communication preferences updated and logged in audit trail!")
                 st.rerun()

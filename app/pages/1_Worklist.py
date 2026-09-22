@@ -20,14 +20,18 @@ from src.continuum.models import Episode, Visit
 from src.continuum.engine.worklist import get_overdue_worklist
 from src.continuum.engine.investigations import get_all_missing_investigations_summary
 from src.continuum.workflow.episodes import transition_episode
+from src.continuum.workflow.states import is_valid_transition
 from app.components.message_editor import render_message_editor
 from app.components.style import apply_theme
+from app.components.nav import render_sidebar, render_context_bar
 
 st.set_page_config(page_title="Overdue Worklist | Continuum", page_icon="📋", layout="wide")
 apply_theme()
+render_sidebar()
 
 st.title("Overdue Worklist")
 st.caption("Ranked strictly by days overdue. No clinical severity scoring.")
+render_context_bar()
 
 Session = get_session_factory()
 today = get_today()
@@ -118,53 +122,31 @@ def render_patient_panel(db, row, inv_summary, key_prefix):
 
     st.markdown("---")
     # Workflow Lifecycle Transition Buttons
-    st.markdown("**Update Closed-Loop Status:**")
-    qa1, qa2, qa3, qa4, qa5 = st.columns(5)
+    current_status = row.get("status", "detected")
+    candidate_transitions = [
+        ("contacted", "Mark 'Contacted'", "Outreach dispatched"),
+        ("promised", "Mark 'Promised'", "Patient promised to attend follow-up"),
+        ("returned", "Mark 'Returned'", "Attended clinic consultation"),
+        ("unreachable", "Unreachable", "Call unanswered"),
+        ("opted_out", "Opted Out", "Patient requested no further contact"),
+    ]
+    allowed_actions = [
+        (s, label, r_reason) for (s, label, r_reason) in candidate_transitions
+        if is_valid_transition(current_status, s) and (s != current_status or s == "contacted")
+    ]
 
-    with qa1:
-        if st.button("Mark 'Contacted'", key=f"{key_prefix}_contacted_{row['episode_id']}"):
-            try:
-                transition_episode(db, row['episode_id'], "contacted", user="care_coordinator", reason="Outreach dispatched")
-                st.success("Updated to contacted!")
-                st.rerun()
-            except Exception as e:
-                st.error(str(e))
-
-    with qa2:
-        if st.button("Mark 'Promised'", key=f"{key_prefix}_promised_{row['episode_id']}"):
-            try:
-                transition_episode(db, row['episode_id'], "promised", user="care_coordinator", reason="Patient promised to attend follow-up")
-                st.success("Updated to promised!")
-                st.rerun()
-            except Exception as e:
-                st.error(str(e))
-
-    with qa3:
-        if st.button("Mark 'Returned'", key=f"{key_prefix}_ret_{row['episode_id']}"):
-            try:
-                transition_episode(db, row['episode_id'], "returned", user="care_coordinator", reason="Attended clinic consultation")
-                st.success("Episode successfully closed — Returned to Care!")
-                st.rerun()
-            except Exception as e:
-                st.error(str(e))
-
-    with qa4:
-        if st.button("Unreachable", key=f"{key_prefix}_unreach_{row['episode_id']}"):
-            try:
-                transition_episode(db, row['episode_id'], "unreachable", user="care_coordinator", reason="Call unanswered")
-                st.info("Marked as unreachable.")
-                st.rerun()
-            except Exception as e:
-                st.error(str(e))
-
-    with qa5:
-        if st.button("Opted Out", key=f"{key_prefix}_optout_{row['episode_id']}"):
-            try:
-                transition_episode(db, row['episode_id'], "opted_out", user="care_coordinator", reason="Patient requested no further contact")
-                st.info("Marked as opted_out.")
-                st.rerun()
-            except Exception as e:
-                st.error(str(e))
+    if allowed_actions:
+        st.markdown("**Update Closed-Loop Status:**")
+        cols = st.columns(len(allowed_actions))
+        for col, (target_status, label, default_reason) in zip(cols, allowed_actions):
+            with col:
+                if st.button(label, key=f"{key_prefix}_{target_status}_{row['episode_id']}", use_container_width=True):
+                    try:
+                        transition_episode(db, row['episode_id'], target_status, user="care_coordinator", reason=default_reason)
+                        st.success(f"Updated to {target_status}!")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(str(e))
 
 
 def render_worklist_table_and_panel(db, rows, inv_summary, key_prefix, max_progress=540):
@@ -193,6 +175,7 @@ def render_worklist_table_and_panel(db, rows, inv_summary, key_prefix, max_progr
     selected_row = None
     with left:
         try:
+            df_key = f"df_{key_prefix}"
             event = st.dataframe(
                 df,
                 use_container_width=True,
@@ -207,18 +190,30 @@ def render_worklist_table_and_panel(db, rows, inv_summary, key_prefix, max_progr
                         format="%d d"
                     )
                 },
-                key=f"df_{key_prefix}"
+                key=df_key
             )
             selected_indices = []
-            if event and hasattr(event, "selection") and hasattr(event.selection, "rows"):
-                selected_indices = event.selection.rows
-            elif isinstance(event, dict) and "selection" in event and "rows" in event["selection"]:
-                selected_indices = event["selection"]["rows"]
+            if df_key in st.session_state:
+                ss_val = st.session_state[df_key]
+                if hasattr(ss_val, "selection") and hasattr(ss_val.selection, "rows"):
+                    selected_indices = ss_val.selection.rows
+                elif isinstance(ss_val, dict) and "selection" in ss_val:
+                    selected_indices = ss_val["selection"].get("rows", [])
+            if not selected_indices and event:
+                if hasattr(event, "selection") and hasattr(event.selection, "rows"):
+                    selected_indices = event.selection.rows
+                elif isinstance(event, dict) and "selection" in event:
+                    selected_indices = event["selection"].get("rows", [])
 
-            if selected_indices:
-                idx = selected_indices[0]
-                if 0 <= idx < len(rows):
-                    selected_row = rows[idx]
+            if selected_indices and 0 <= selected_indices[0] < len(rows):
+                selected_row = rows[selected_indices[0]]
+                st.session_state[f"last_selected_uhid_{key_prefix}"] = selected_row.get("uh_id")
+            elif f"last_selected_uhid_{key_prefix}" in st.session_state:
+                last_uhid = st.session_state[f"last_selected_uhid_{key_prefix}"]
+                for r in rows:
+                    if r.get("uh_id") == last_uhid:
+                        selected_row = r
+                        break
         except Exception:
             # Fallback to radio over patient labels in left column if st.dataframe selection fails
             st.dataframe(df, use_container_width=True, hide_index=True, height=400)

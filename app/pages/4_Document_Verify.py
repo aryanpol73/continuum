@@ -25,9 +25,12 @@ from app.components.style import apply_theme
 
 st.set_page_config(page_title="Document Verify | Continuum", page_icon="📄", layout="wide")
 apply_theme()
+from app.components.nav import render_sidebar, render_context_bar
+render_sidebar()
 
 st.title("Clinical Document & Prescription Verification")
 st.caption("Multimodal vision extraction with human-in-the-loop verification before committing to clinical records.")
+render_context_bar()
 
 uploads_dir = get_base_dir() / "data" / "uploads"
 uploads_dir.mkdir(parents=True, exist_ok=True)
