@@ -12,7 +12,10 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from src.continuum.db import get_session_factory
-from src.continuum.models import Patient, Visit, Prescription, Episode, OutreachLog, AuditLog, UploadedReport
+from src.continuum.models import (
+    Patient, Visit, Prescription, Episode, OutreachLog, AuditLog, UploadedReport,
+    issue_patient_token
+)
 from src.continuum.engine.investigations import get_patient_missing_investigations
 from app.components.patient_card import render_patient_card
 from app.components.style import apply_theme
@@ -57,6 +60,17 @@ with Session() as db:
     }
 
     render_patient_card(patient_dict)
+
+    col_link1, col_link2 = st.columns([1, 2])
+    with col_link1:
+        if st.button("🔗 Generate Patient Link", key=f"btn_gen_link_{patient.id}"):
+            tok = issue_patient_token(db, patient.id)
+            st.session_state[f"pat_token_{patient.id}"] = tok.token
+
+    cur_tok = st.session_state.get(f"pat_token_{patient.id}")
+    if cur_tok:
+        portal_url = f"http://localhost:8501/My_Care?t={cur_tok}"
+        st.info(f"**Patient Portal Link (valid 30 days):**\n`{portal_url}`")
 
     # Tabs for comprehensive view
     t_visits, t_rxs, t_reports, t_episodes, t_outreach, t_audit = st.tabs([

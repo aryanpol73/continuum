@@ -6,6 +6,7 @@ from src.continuum.models import AuditLog, ClinicProfile
 NAV = [
     ("Daily Work", [
         ("app/pages/1_Worklist.py",         "Overdue Worklist"),
+        ("app/pages/9_Inbox.py",            "Patient Replies"),
         ("app/pages/5_Escalation_Queue.py", "Escalation Queue"),
         ("app/pages/2_Patient_Detail.py",   "Patient Detail"),
     ]),

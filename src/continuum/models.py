@@ -4,7 +4,8 @@ Implements clean separation of episode reason (why flagged) vs status (workflow 
 """
 
 from __future__ import annotations
-from datetime import datetime, date
+import secrets
+from datetime import datetime, date, timedelta
 from sqlalchemy import (
     Column, Integer, String, Float, Boolean, Date, DateTime, Text, ForeignKey
 )
@@ -227,5 +228,54 @@ def get_clinic_profile(db) -> ClinicProfile:
         db.commit()
         db.refresh(p)
     return p
+
+
+class PatientAccessToken(Base):
+    __tablename__ = "patient_access_tokens"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    patient_id = Column(Integer, ForeignKey("patients.id"), nullable=False, index=True)
+    token = Column(String(64), unique=True, nullable=False, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    expires_at = Column(DateTime, nullable=True)
+    revoked = Column(Boolean, default=False)
+    patient = relationship("Patient")
+
+
+class PatientMessage(Base):
+    __tablename__ = "patient_messages"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    patient_id = Column(Integer, ForeignKey("patients.id"), nullable=False, index=True)
+    episode_id = Column(Integer, ForeignKey("episodes.id"), nullable=True)
+    direction = Column(String(8), nullable=False)          # IN | OUT
+    category = Column(String(32), nullable=False)          # APPOINTMENT_REPLY | REFILL_PROOF | ADMIN_NOTE
+    body = Column(Text, nullable=True)
+    attachment_path = Column(String(256), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    read_at = Column(DateTime, nullable=True)
+    handled_by = Column(String(64), nullable=True)
+    patient = relationship("Patient")
+
+
+def issue_patient_token(db, patient_id: int, days_valid: int = 30) -> PatientAccessToken:
+    tok = PatientAccessToken(
+        patient_id=patient_id,
+        token=secrets.token_urlsafe(24),
+        expires_at=datetime.utcnow() + timedelta(days=days_valid),
+    )
+    db.add(tok)
+    db.commit()
+    db.refresh(tok)
+    return tok
+
+
+def resolve_patient_token(db, token: str):
+    t = db.query(PatientAccessToken).filter(
+        PatientAccessToken.token == token,
+        PatientAccessToken.revoked.is_(False),
+    ).first()
+    if not t or (t.expires_at and t.expires_at < datetime.utcnow()):
+        return None
+    return t.patient
+
 
 
