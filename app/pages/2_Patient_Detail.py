@@ -73,7 +73,7 @@ with Session() as db:
                 entity_type="Patient",
                 entity_id=str(patient.id),
                 user="care_coordinator",
-                details={"token": tok.token},
+                details={"token_suffix": tok.token[-6:]},
             )
             st.session_state[f"pat_token_{patient.id}"] = tok.token
 

@@ -159,14 +159,24 @@ def test_patient_portal_and_inbox_audit():
             user="care_coordinator",
             details={"patient_id": patient.id, "category": "APPOINTMENT_REPLY"},
         )
+        # 4. Patient link issued audit with masked suffix
+        log_action(
+            db,
+            action="PATIENT_LINK_ISSUED",
+            entity_type="Patient",
+            entity_id=str(patient.id),
+            user="care_coordinator",
+            details={"token_suffix": "abcdef"},
+        )
         db.commit()
 
         logs = db.query(AuditLog).all()
-        assert len(logs) == 3
+        assert len(logs) == 4
         actions = [l.action for l in logs]
         assert "PATIENT_PORTAL_REPLY" in actions
         assert "PATIENT_PORTAL_UPLOAD" in actions
         assert "PATIENT_MESSAGE_HANDLED" in actions
+        assert "PATIENT_LINK_ISSUED" in actions
         users = [l.user_or_system for l in logs]
         assert f"patient:{patient.uh_id}" in users
         assert "care_coordinator" in users
