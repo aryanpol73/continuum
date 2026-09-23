@@ -250,6 +250,10 @@ class PatientMessage(Base):
     category = Column(String(32), nullable=False)          # APPOINTMENT_REPLY | REFILL_PROOF | ADMIN_NOTE
     body = Column(Text, nullable=True)
     attachment_path = Column(String(256), nullable=True)
+    attachment_name = Column(String(128), nullable=True)
+    attachment_mime = Column(String(64), nullable=True)
+    urgent_flagged = Column(Boolean, default=False, index=True)
+    topic = Column(String(32), nullable=True)          # MEDICINES | APPOINTMENT | REPORTS | OTHER
     created_at = Column(DateTime, default=datetime.utcnow)
     read_at = Column(DateTime, nullable=True)
     handled_by = Column(String(64), nullable=True)

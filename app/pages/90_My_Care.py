@@ -23,6 +23,7 @@ from src.continuum.models import (
     resolve_patient_token,
 )
 from src.continuum.audit import log_action
+from app.components.chat import render_chat
 
 st.set_page_config(
     page_title="My Care",
@@ -139,3 +140,13 @@ with Session() as db:
         )
         db.commit()
         st.success("Received. The desk will confirm your refill.")
+
+    st.divider()
+    st.subheader("Chat with the clinic")
+    topic_choice = st.selectbox(
+        "Message Topic",
+        ["Medicines", "Appointment", "Reports", "Other"],
+        key="pt_topic_select",
+    )
+    render_chat(db, patient.id, viewer="patient", key_prefix="pt", topic=topic_choice.upper())
+

@@ -19,6 +19,7 @@ from src.continuum.models import (
 from src.continuum.audit import log_action
 from src.continuum.engine.investigations import get_patient_missing_investigations
 from app.components.patient_card import render_patient_card
+from app.components.chat import render_chat
 from app.components.style import apply_theme
 
 st.set_page_config(page_title="Patient 360 | Continuum", page_icon="👤", layout="wide")
@@ -84,12 +85,13 @@ with Session() as db:
         st.code(portal_url, language="text")
 
     # Tabs for comprehensive view
-    t_visits, t_rxs, t_reports, t_episodes, t_outreach, t_audit = st.tabs([
+    t_visits, t_rxs, t_reports, t_episodes, t_outreach, t_messages, t_audit = st.tabs([
         "🩺 Consultation Visits",
         "💊 Prescriptions & Refills",
         "🔬 Investigations & Reports",
         "⚡ Care Continuum Episodes",
-        "💬 Outreach History",
+        "📢 Outreach History",
+        "💬 Messages",
         "📜 Audit Trail"
     ])
 
@@ -216,6 +218,10 @@ with Session() as db:
                     """,
                     unsafe_allow_html=True
                 )
+
+    with t_messages:
+        st.subheader("Patient Conversation Thread")
+        render_chat(db, patient.id, viewer="clinic", key_prefix="pd")
 
     with t_audit:
         st.subheader("Patient Audit History")
