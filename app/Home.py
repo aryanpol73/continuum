@@ -131,7 +131,7 @@ st.subheader(f"Activity on {current_today}")
 d1, d2, d3, d4 = st.columns(4)
 d1.metric("Expected in OPD", snap["expected_today"])
 d2.metric("Attended", snap["attended_today"])
-d3.metric("Did not attend", snap["no_show_today"])
+d3.metric("Not seen on due date", snap["no_show_today"])
 d4.metric(
     "Care lapsed today",
     snap["lapsed_today"],

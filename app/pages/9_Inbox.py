@@ -65,9 +65,9 @@ with Session() as db:
                         log_action(
                             db,
                             action="PATIENT_MESSAGE_HANDLED",
-                            entity_type="patient_message",
+                            entity_type="PatientMessage",
                             entity_id=str(m.id),
-                            user_or_system="care_coordinator",
+                            user="care_coordinator",
                             details={"patient_id": m.patient_id, "category": m.category},
                         )
                         db.commit()

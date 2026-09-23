@@ -16,6 +16,7 @@ from src.continuum.models import (
     Patient, Visit, Prescription, Episode, OutreachLog, AuditLog, UploadedReport,
     issue_patient_token
 )
+from src.continuum.audit import log_action
 from src.continuum.engine.investigations import get_patient_missing_investigations
 from app.components.patient_card import render_patient_card
 from app.components.style import apply_theme
@@ -65,12 +66,21 @@ with Session() as db:
     with col_link1:
         if st.button("🔗 Generate Patient Link", key=f"btn_gen_link_{patient.id}"):
             tok = issue_patient_token(db, patient.id)
+            log_action(
+                db,
+                action="PATIENT_LINK_ISSUED",
+                entity_type="Patient",
+                entity_id=str(patient.id),
+                user="care_coordinator",
+                details={"token": tok.token},
+            )
             st.session_state[f"pat_token_{patient.id}"] = tok.token
 
     cur_tok = st.session_state.get(f"pat_token_{patient.id}")
     if cur_tok:
         portal_url = f"http://localhost:8501/My_Care?t={cur_tok}"
-        st.info(f"**Patient Portal Link (valid 30 days):**\n`{portal_url}`")
+        st.caption("Patient Portal Link (valid 30 days):")
+        st.code(portal_url, language="text")
 
     # Tabs for comprehensive view
     t_visits, t_rxs, t_reports, t_episodes, t_outreach, t_audit = st.tabs([

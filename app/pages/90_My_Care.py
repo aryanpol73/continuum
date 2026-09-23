@@ -70,10 +70,7 @@ with Session() as db:
     if not rxs:
         st.caption("No prescription on record yet.")
     for r in rxs:
-        med_name = getattr(r, "medication_name", getattr(r, "drug_name", "Unknown Medicine"))
-        dose_str = getattr(r, "raw_dose", getattr(r, "dose_pattern", ""))
-        qty_str = getattr(r, "quantity", "—")
-        st.markdown(f"- **{med_name}** — {dose_str or ''}  ·  qty {qty_str or '—'}")
+        st.markdown(f"- **{r.medication_name}** — {r.raw_dose or ''}  ·  qty {r.quantity or '—'}")
 
     st.divider()
     st.subheader("Reply to the clinic")
@@ -104,9 +101,9 @@ with Session() as db:
         log_action(
             db,
             action="PATIENT_PORTAL_REPLY",
-            entity_type="patient",
+            entity_type="Patient",
             entity_id=str(patient.id),
-            user_or_system=f"patient:{patient.uh_id}",
+            user=f"patient:{patient.uh_id}",
             details={"category": "APPOINTMENT_REPLY", "body": msg_body},
         )
         db.commit()
@@ -135,9 +132,9 @@ with Session() as db:
         log_action(
             db,
             action="PATIENT_PORTAL_UPLOAD",
-            entity_type="patient",
+            entity_type="Patient",
             entity_id=str(patient.id),
-            user_or_system=f"patient:{patient.uh_id}",
+            user=f"patient:{patient.uh_id}",
             details={"category": "REFILL_PROOF", "filename": up.name},
         )
         db.commit()

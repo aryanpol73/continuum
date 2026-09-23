@@ -111,3 +111,63 @@ def test_patient_message_handling():
             .all()
         )
         assert len(remaining) == 0
+
+
+def test_patient_portal_and_inbox_audit():
+    from src.continuum.audit import log_action
+    from src.continuum.models import AuditLog
+
+    engine = create_engine("sqlite:///:memory:", echo=False)
+    Base.metadata.create_all(bind=engine)
+    Session = sessionmaker(bind=engine)
+
+    with Session() as db:
+        patient = Patient(
+            uh_id="PORTAL-003",
+            name="Vikas Shinde",
+            phone="919822778899",
+            gender="Male",
+            age=49,
+        )
+        db.add(patient)
+        db.commit()
+
+        # 1. Patient reply audit
+        log_action(
+            db,
+            action="PATIENT_PORTAL_REPLY",
+            entity_type="Patient",
+            entity_id=str(patient.id),
+            user=f"patient:{patient.uh_id}",
+            details={"category": "APPOINTMENT_REPLY"},
+        )
+        # 2. Patient upload audit
+        log_action(
+            db,
+            action="PATIENT_PORTAL_UPLOAD",
+            entity_type="Patient",
+            entity_id=str(patient.id),
+            user=f"patient:{patient.uh_id}",
+            details={"category": "REFILL_PROOF", "filename": "rx.jpg"},
+        )
+        # 3. Coordinator handled audit
+        log_action(
+            db,
+            action="PATIENT_MESSAGE_HANDLED",
+            entity_type="PatientMessage",
+            entity_id="1",
+            user="care_coordinator",
+            details={"patient_id": patient.id, "category": "APPOINTMENT_REPLY"},
+        )
+        db.commit()
+
+        logs = db.query(AuditLog).all()
+        assert len(logs) == 3
+        actions = [l.action for l in logs]
+        assert "PATIENT_PORTAL_REPLY" in actions
+        assert "PATIENT_PORTAL_UPLOAD" in actions
+        assert "PATIENT_MESSAGE_HANDLED" in actions
+        users = [l.user_or_system for l in logs]
+        assert f"patient:{patient.uh_id}" in users
+        assert "care_coordinator" in users
+

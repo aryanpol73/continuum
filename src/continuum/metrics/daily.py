@@ -12,7 +12,9 @@ def get_daily_snapshot(db: Session, day: date) -> Dict[str, Any]:
         Episode.due_date == day, Episode.is_refill_only.is_(True)
     ).count()
     expected = db.query(Visit).filter(Visit.next_visit_due_date == day).count()
-    attended = db.query(Visit).filter(Visit.visit_date == day).count()
+    attended = db.query(Visit).filter(
+        Visit.visit_date == day, Visit.is_diabetes_cohort.is_(True)
+    ).count()
     closed = db.query(Episode).filter(Episode.closed_date == day).count()
     outreach = db.query(OutreachLog).filter(
         OutreachLog.timestamp >= datetime.combine(day, datetime.min.time()),
@@ -36,7 +38,9 @@ def get_daily_series(db: Session, end_day: date, days: int = 30) -> List[Dict[st
         Episode.due_date >= start, Episode.due_date <= end_day
     ).all()
     vis = db.query(Visit.visit_date).filter(
-        Visit.visit_date >= start, Visit.visit_date <= end_day
+        Visit.visit_date >= start,
+        Visit.visit_date <= end_day,
+        Visit.is_diabetes_cohort.is_(True),
     ).all()
 
     lapsed, refill, attended = {}, {}, {}

@@ -44,6 +44,7 @@ def test_daily_snapshot_and_series():
             patient_id=patient.id,
             visit_date=target_day,
             doctor_name="Dr. Patni",
+            is_diabetes_cohort=True,
             next_visit_due_date=date(2026, 10, 19),
         )
         db.add(v_attended)
