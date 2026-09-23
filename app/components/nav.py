@@ -1,7 +1,10 @@
+from pathlib import Path
 import streamlit as st
 from src.continuum.db import get_session_factory
 from src.continuum.config import get_today
 from src.continuum.models import AuditLog, ClinicProfile
+
+LOGO_PATH = Path(__file__).resolve().parent.parent / "assets" / "logo.png"
 
 NAV = [
     ("Daily Work", [
@@ -42,14 +45,27 @@ def _safe_page_link(path: str, label: str):
         pass
 
 def render_sidebar():
+    if LOGO_PATH.exists():
+        try:
+            st.logo(str(LOGO_PATH))
+        except Exception:
+            pass
     with st.sidebar:
-        st.markdown(
-            "<div style='font-size:1.05rem;font-weight:600;color:#0F766E;'>"
-            "Continuum</div>"
-            "<div style='font-size:0.75rem;color:#6B7280;margin-bottom:14px;'>"
-            "Follow-up &amp; Refill Engine</div>",
-            unsafe_allow_html=True,
-        )
+        if LOGO_PATH.exists():
+            st.image(str(LOGO_PATH), width=175)
+            st.markdown(
+                "<div style='font-size:0.75rem;color:#6B7280;margin-top:-6px;margin-bottom:14px;text-align:center;'>"
+                "Follow-up &amp; Refill Engine</div>",
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(
+                "<div style='font-size:1.05rem;font-weight:600;color:#0F766E;'>"
+                "Continuum</div>"
+                "<div style='font-size:0.75rem;color:#6B7280;margin-bottom:14px;'>"
+                "Follow-up &amp; Refill Engine</div>",
+                unsafe_allow_html=True,
+            )
         _safe_page_link("app/Home.py", label="Overview")
         for section, pages in NAV:
             st.markdown(

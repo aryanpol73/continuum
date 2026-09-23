@@ -83,9 +83,15 @@ if not is_configured_val:
     )
 
 # Header Block
-st.title(clinic_name_val)
-st.subheader(doctor_name_val)
-st.caption(f"Simulated Today: {current_today}")
+col_logo, col_title = st.columns([1, 7], gap="small")
+with col_logo:
+    logo_path = Path(__file__).resolve().parent / "assets" / "logo.png"
+    if logo_path.exists():
+        st.image(str(logo_path), width=115)
+with col_title:
+    st.title(clinic_name_val)
+    st.subheader(doctor_name_val)
+    st.caption(f"Simulated Today: {current_today}")
 render_context_bar()
 
 with Session() as db:
