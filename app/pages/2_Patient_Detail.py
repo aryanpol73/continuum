@@ -16,6 +16,7 @@ from src.continuum.models import (
     Patient, Visit, Prescription, Episode, OutreachLog, AuditLog, UploadedReport,
     issue_patient_token
 )
+from src.continuum.config import get_portal_base_url
 from src.continuum.audit import log_action
 from src.continuum.engine.investigations import get_patient_missing_investigations
 from app.components.patient_card import render_patient_card
@@ -80,7 +81,7 @@ with Session() as db:
 
     cur_tok = st.session_state.get(f"pat_token_{patient.id}")
     if cur_tok:
-        portal_url = f"http://localhost:8501/My_Care?t={cur_tok}"
+        portal_url = f"{get_portal_base_url()}/My_Care?t={cur_tok}"
         st.caption("Patient Portal Link (valid 30 days):")
         st.code(portal_url, language="text")
 

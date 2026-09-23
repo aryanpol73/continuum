@@ -118,3 +118,12 @@ def set_today_override(new_date: Optional[date | str]) -> None:
         _runtime_today_override = datetime.strptime(new_date.strip(), "%Y-%m-%d").date()
     else:
         _runtime_today_override = new_date
+
+
+def get_portal_base_url() -> str:
+    """
+    Returns base URL for patient portal links.
+    Reads PORTAL_BASE_URL env var, defaults to http://localhost:8501.
+    """
+    return os.getenv("PORTAL_BASE_URL", "http://localhost:8501").rstrip("/")
+

@@ -15,6 +15,7 @@ if str(ROOT_DIR) not in sys.path:
 
 from src.continuum.db import get_session_factory
 from src.continuum.models import Patient, PatientMessage, PatientAccessToken, issue_patient_token
+from src.continuum.config import get_portal_base_url
 from src.continuum.messaging.thread import get_thread_summaries, mark_thread_read
 from src.continuum.audit import log_action
 from app.components.chat import render_chat
@@ -169,7 +170,7 @@ with Session() as db:
 
                 tok_str = st.session_state.get(f"inbox_token_{sel_patient.id}")
                 if tok_str:
-                    portal_url = f"http://localhost:8501/My_Care?t={tok_str}"
+                    portal_url = f"{get_portal_base_url()}/My_Care?t={tok_str}"
                     st.caption("Patient Portal Link (valid 30 days):")
                     st.code(portal_url, language="text")
 
