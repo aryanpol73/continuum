@@ -6,6 +6,7 @@ Two-column threaded inbox for patient-clinic chat, attachments, and urgent sympt
 from __future__ import annotations
 import sys
 from pathlib import Path
+from datetime import datetime
 import streamlit as st
 
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent
@@ -13,8 +14,9 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from src.continuum.db import get_session_factory
-from src.continuum.models import Patient
+from src.continuum.models import Patient, PatientMessage, PatientAccessToken, issue_patient_token
 from src.continuum.messaging.thread import get_thread_summaries, mark_thread_read
+from src.continuum.audit import log_action
 from app.components.chat import render_chat
 from app.components.style import apply_theme
 from app.components.nav import render_sidebar, render_context_bar, require_clinic_setup
@@ -35,6 +37,25 @@ with Session() as db:
     col_list, col_chat = st.columns([4, 6])
 
     with col_list:
+        with st.container(border=True):
+            st.markdown("**Start a conversation**")
+            all_pts = db.query(Patient).order_by(Patient.name).all()
+            pt_options = {"Select a patient...": None}
+            for p in all_pts:
+                pt_options[f"{p.name} ({p.uh_id}) - {p.phone or 'no phone'}"] = p.id
+
+            chosen_label = st.selectbox(
+                "Select a patient",
+                options=list(pt_options.keys()),
+                key="inbox_new_patient_select",
+                label_visibility="collapsed",
+            )
+            if st.button("Open conversation", key="btn_open_conversation"):
+                target_pid = pt_options.get(chosen_label)
+                if target_pid is not None:
+                    st.session_state["inbox_patient_id"] = target_pid
+                    st.rerun()
+
         st.subheader("Conversations")
         col_f1, col_f2 = st.columns([3, 2])
         with col_f1:
@@ -59,10 +80,8 @@ with Session() as db:
             else:
                 st.caption("No conversations match this search filter.")
         else:
-            # Set default selection if none
-            current_sel = st.session_state.get("inbox_patient_id")
-            valid_ids = [s["patient_id"] for s in filtered]
-            if current_sel not in valid_ids:
+            # Fall back to first thread only when no patient is currently selected
+            if st.session_state.get("inbox_patient_id") is None and filtered:
                 st.session_state["inbox_patient_id"] = filtered[0]["patient_id"]
 
             for s in filtered:
@@ -98,8 +117,18 @@ with Session() as db:
             if not sel_patient:
                 st.warning("Selected patient record not found.")
             else:
-                # Mark as read when thread is opened
-                mark_thread_read(db, selected_id, reader="care_coordinator")
+                # Skip mark_thread_read when patient has no unread inbound messages
+                has_inbound = (
+                    db.query(PatientMessage)
+                    .filter(
+                        PatientMessage.patient_id == selected_id,
+                        PatientMessage.direction == "IN",
+                        PatientMessage.read_at.is_(None),
+                    )
+                    .first()
+                ) is not None
+                if has_inbound:
+                    mark_thread_read(db, selected_id, reader="care_coordinator")
 
                 # Header with details and link to Patient Detail
                 c_h1, c_h2 = st.columns([4, 2])
@@ -110,6 +139,39 @@ with Session() as db:
                     if st.button("Open Full Patient 360° →", key=f"btn_p360_{sel_patient.id}"):
                         st.session_state["selected_patient_id"] = sel_patient.id
                         st.switch_page("pages/2_Patient_Detail.py")
+
+                # Check for active portal link
+                now_dt = datetime.utcnow()
+                active_token = (
+                    db.query(PatientAccessToken)
+                    .filter(
+                        PatientAccessToken.patient_id == sel_patient.id,
+                        PatientAccessToken.revoked.is_(False),
+                        (PatientAccessToken.expires_at.is_(None) | (PatientAccessToken.expires_at > now_dt)),
+                    )
+                    .order_by(PatientAccessToken.id.desc())
+                    .first()
+                )
+                if not active_token:
+                    st.warning("This patient has no active portal link. They will not see clinic replies until you issue one.")
+                    if st.button("Generate patient link", key=f"btn_gen_link_inbox_{sel_patient.id}"):
+                        tok = issue_patient_token(db, sel_patient.id, days_valid=30)
+                        log_action(
+                            db,
+                            action="PATIENT_LINK_ISSUED",
+                            entity_type="Patient",
+                            entity_id=str(sel_patient.id),
+                            user="care_coordinator",
+                            details={"token_suffix": tok.token[-6:]},
+                        )
+                        st.session_state[f"inbox_token_{sel_patient.id}"] = tok.token
+                        st.rerun()
+
+                tok_str = st.session_state.get(f"inbox_token_{sel_patient.id}")
+                if tok_str:
+                    portal_url = f"http://localhost:8501/My_Care?t={tok_str}"
+                    st.caption("Patient Portal Link (valid 30 days):")
+                    st.code(portal_url, language="text")
 
                 st.divider()
                 render_chat(db, selected_id, viewer="clinic", key_prefix="inbox")

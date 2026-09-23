@@ -121,3 +121,50 @@ def test_apptest_pages_and_handlers():
             if created_token_ids:
                 db.query(PatientAccessToken).filter(PatientAccessToken.id.in_(created_token_ids)).delete(synchronize_session=False)
             db.commit()
+
+
+def test_inbox_clinic_initiated_conversation():
+    base_dir = get_base_dir()
+    Session = get_session_factory()
+    created_audit_ids = []
+    created_token_ids = []
+
+    try:
+        with Session() as db:
+            subq = db.query(PatientMessage.patient_id).distinct()
+            patient_no_msg = db.query(Patient).filter(Patient.id.not_in(subq)).first()
+            if not patient_no_msg:
+                patient_no_msg = db.query(Patient).first()
+            pid = patient_no_msg.id
+
+        # Render 9_Inbox.py with clinic-initiated patient selection
+        at = AppTest.from_file(str(base_dir / "app/pages/9_Inbox.py"), default_timeout=30)
+        at.session_state["inbox_patient_id"] = pid
+        at.run()
+        assert len(at.exception) == 0
+        assert len(at.chat_input) > 0
+
+        # Trigger generate patient link if present
+        link_buttons = [b for b in at.button if "Generate patient link" in b.label]
+        if link_buttons:
+            link_buttons[0].click().run()
+            assert len(at.exception) == 0
+            with Session() as db:
+                tok = db.query(PatientAccessToken).filter(PatientAccessToken.patient_id == pid).first()
+                if tok:
+                    created_token_ids.append(tok.id)
+                aud = db.query(AuditLog).filter(
+                    AuditLog.action == "PATIENT_LINK_ISSUED",
+                    AuditLog.entity_id == str(pid)
+                ).all()
+                for a in aud:
+                    created_audit_ids.append(a.id)
+
+    finally:
+        with Session() as db:
+            if created_token_ids:
+                db.query(PatientAccessToken).filter(PatientAccessToken.id.in_(created_token_ids)).delete(synchronize_session=False)
+            if created_audit_ids:
+                db.query(AuditLog).filter(AuditLog.id.in_(created_audit_ids)).delete(synchronize_session=False)
+            db.commit()
+
