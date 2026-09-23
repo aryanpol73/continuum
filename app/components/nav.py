@@ -2,7 +2,8 @@ from pathlib import Path
 import streamlit as st
 from src.continuum.db import get_session_factory
 from src.continuum.config import get_today
-from src.continuum.models import AuditLog, ClinicProfile
+from src.continuum.models import AuditLog, ClinicProfile, get_clinic_profile
+from app.components.pwa import render_pwa_sidebar_badge, inject_pwa_client_bridge
 
 LOGO_PATH = Path(__file__).resolve().parent.parent / "assets" / "logo.png"
 
@@ -76,6 +77,8 @@ def render_sidebar():
             )
             for path, label in pages:
                 _safe_page_link(path, label=label)
+        render_pwa_sidebar_badge()
+    inject_pwa_client_bridge()
 
 def render_context_bar():
     Session = get_session_factory()
@@ -104,3 +107,17 @@ def render_context_bar():
         """,
         unsafe_allow_html=True,
     )
+
+
+def require_clinic_setup():
+    """Bounce to Clinic Setup until the profile is configured."""
+    Session = get_session_factory()
+    with Session() as db:
+        profile = get_clinic_profile(db)
+        configured = profile.is_configured
+    if configured:
+        return
+    st.warning("Configure your clinic profile to activate Continuum.")
+    _safe_page_link("app/pages/0_Clinic_Setup.py", label="Go to Clinic Setup →")
+    st.stop()
+

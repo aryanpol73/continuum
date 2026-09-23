@@ -10,11 +10,11 @@ from typing import Any, Dict, Optional
 import yaml
 from dotenv import load_dotenv
 
-# Load .env if present
-load_dotenv()
-
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 CONFIG_DIR = BASE_DIR / "config"
+
+# Load .env if present
+load_dotenv(BASE_DIR / ".env", override=True)
 
 _runtime_today_override: Optional[date] = None
 

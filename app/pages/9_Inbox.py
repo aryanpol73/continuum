@@ -17,11 +17,12 @@ from src.continuum.db import get_session_factory
 from src.continuum.models import PatientMessage
 from src.continuum.audit import log_action
 from app.components.style import apply_theme
-from app.components.nav import render_sidebar, render_context_bar
+from app.components.nav import render_sidebar, render_context_bar, require_clinic_setup
 
 st.set_page_config(page_title="Inbox | Continuum", page_icon="📥", layout="wide")
 apply_theme()
 render_sidebar()
+require_clinic_setup()
 
 st.title("Patient Replies")
 st.caption("Administrative replies and uploads from patients. Not a medical advice channel.")

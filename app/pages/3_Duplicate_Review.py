@@ -19,8 +19,9 @@ from app.components.style import apply_theme
 
 st.set_page_config(page_title="Duplicate Review | Continuum", page_icon="👥", layout="wide")
 apply_theme()
-from app.components.nav import render_sidebar, render_context_bar
+from app.components.nav import render_sidebar, render_context_bar, require_clinic_setup
 render_sidebar()
+require_clinic_setup()
 
 st.title("Duplicate Patient Resolution Workbench")
 st.caption("Human-in-the-loop review for patients sharing identical phone numbers or high name/age similarity.")

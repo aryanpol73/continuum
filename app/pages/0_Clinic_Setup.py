@@ -51,13 +51,13 @@ with Session() as db:
             c_name = st.text_input(
                 "Hospital / Clinic Name",
                 value=profile.clinic_name if profile.clinic_name != "Continuum Demo Clinic" else "",
-                placeholder="e.g. Ramraksha Hospital, City Care Clinic"
+                placeholder="e.g. City Care Clinic"
             )
 
             d_name = st.text_input(
                 "Consultant / Treating Diabetologist",
                 value=profile.doctor_name if profile.doctor_name != "Dr. [Name]" else "",
-                placeholder="e.g. Dr. Ashwin Sadavarte"
+                placeholder="e.g. Dr. A. Sharma"
             )
 
             col_p1, col_p2 = st.columns(2)

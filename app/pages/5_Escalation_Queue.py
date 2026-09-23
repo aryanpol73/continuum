@@ -20,8 +20,9 @@ from app.components.style import apply_theme
 
 st.set_page_config(page_title="Kin Escalation | Continuum", page_icon="🚨", layout="wide")
 apply_theme()
-from app.components.nav import render_sidebar, render_context_bar
+from app.components.nav import render_sidebar, render_context_bar, require_clinic_setup
 render_sidebar()
+require_clinic_setup()
 
 st.title("Caregiver / Kin Escalation Queue")
 st.caption("Outreach center for patients overdue past the escalation threshold. Strictly gated by patient's recorded kin consent.")

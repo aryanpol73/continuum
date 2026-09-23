@@ -18,8 +18,9 @@ from app.components.style import apply_theme
 
 st.set_page_config(page_title="Consent Registry | Continuum", page_icon="🔒", layout="wide")
 apply_theme()
-from app.components.nav import render_sidebar, render_context_bar
+from app.components.nav import render_sidebar, render_context_bar, require_clinic_setup
 render_sidebar()
+require_clinic_setup()
 
 st.title("Patient Opt-Out & Kin Consent Registry")
 st.caption("Patient outreach is routine clinical care (permitted unless opted out). Kin contact is strictly gated by affirmative consent.")

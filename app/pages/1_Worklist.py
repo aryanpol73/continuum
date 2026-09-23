@@ -23,11 +23,12 @@ from src.continuum.workflow.episodes import transition_episode
 from src.continuum.workflow.states import is_valid_transition
 from app.components.message_editor import render_message_editor
 from app.components.style import apply_theme
-from app.components.nav import render_sidebar, render_context_bar
+from app.components.nav import render_sidebar, render_context_bar, require_clinic_setup
 
 st.set_page_config(page_title="Overdue Worklist | Continuum", page_icon="📋", layout="wide")
 apply_theme()
 render_sidebar()
+require_clinic_setup()
 
 st.title("Overdue Worklist")
 st.caption("Ranked strictly by days overdue. No clinical severity scoring.")

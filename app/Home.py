@@ -22,7 +22,8 @@ from src.continuum.workflow.episodes import generate_episodes_from_rules
 from src.continuum.engine.cohort import update_all_visits_cohort
 from src.continuum.engine.dosing import update_all_prescriptions_dosing
 from app.components.style import apply_theme
-from app.components.nav import render_sidebar, render_context_bar
+from app.components.nav import render_sidebar, render_context_bar, require_clinic_setup
+from app.components.pwa import setup_pwa
 
 st.set_page_config(
     page_title="Continuum | Clinical Care Engine",
@@ -32,8 +33,10 @@ st.set_page_config(
 )
 apply_theme()
 render_sidebar()
+require_clinic_setup()
 
 init_db()
+setup_pwa()
 
 settings = get_settings()
 current_today = get_today()
@@ -64,9 +67,9 @@ with col_t1:
         st.sidebar.success(f"Anchor set to {override_date}")
         st.rerun()
 with col_t2:
-    if st.sidebar.button("Reset Live", use_container_width=True):
+    if st.sidebar.button("Reset Anchor", use_container_width=True):
         set_today_override(None)
-        st.sidebar.info("Reset to live system date.")
+        st.sidebar.info("Reset to anchor date (2026-09-19).")
         st.rerun()
 
 st.sidebar.markdown("---")

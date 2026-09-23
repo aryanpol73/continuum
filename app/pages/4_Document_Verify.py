@@ -25,8 +25,9 @@ from app.components.style import apply_theme
 
 st.set_page_config(page_title="Document Verify | Continuum", page_icon="📄", layout="wide")
 apply_theme()
-from app.components.nav import render_sidebar, render_context_bar
+from app.components.nav import render_sidebar, render_context_bar, require_clinic_setup
 render_sidebar()
+require_clinic_setup()
 
 st.title("Clinical Document & Prescription Verification")
 st.caption("Multimodal vision extraction with human-in-the-loop verification before committing to clinical records.")
