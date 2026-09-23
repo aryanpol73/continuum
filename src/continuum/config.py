@@ -125,5 +125,9 @@ def get_portal_base_url() -> str:
     Returns base URL for patient portal links.
     Reads PORTAL_BASE_URL env var, defaults to http://localhost:8501.
     """
-    return os.getenv("PORTAL_BASE_URL", "http://localhost:8501").rstrip("/")
+    val = os.getenv("PORTAL_BASE_URL")
+    if not val or not val.strip():
+        return "http://localhost:8501"
+    return val.strip().rstrip("/")
+
 
