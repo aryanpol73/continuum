@@ -118,6 +118,7 @@ def render_chat(
                 uploaded_file=up_file,
                 author=author,
             )
+            st.session_state[f"{key_prefix}_sent_file"] = up_file.name
             if viewer == "patient" and msg.urgent_flagged:
                 st.session_state[f"{key_prefix}_urgent_notice"] = True
             st.rerun()
@@ -129,13 +130,21 @@ def render_chat(
     if user_input:
         direction = "IN" if viewer == "patient" else "OUT"
         author = f"patient:{patient.uh_id}" if viewer == "patient" else "care_coordinator"
+        
+        # Avoid re-sending the same attachment if already sent
+        file_to_send = None
+        if 'up_file' in locals() and up_file is not None:
+            if st.session_state.get(f"{key_prefix}_sent_file") != up_file.name:
+                file_to_send = up_file
+                st.session_state[f"{key_prefix}_sent_file"] = up_file.name
+
         msg = post_message(
             db,
             patient_id=patient_id,
             direction=direction,
             body=user_input,
             topic=topic,
-            uploaded_file=up_file if 'up_file' in locals() and up_file else None,
+            uploaded_file=file_to_send,
             author=author,
         )
         if viewer == "patient" and msg.urgent_flagged:

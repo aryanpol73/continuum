@@ -34,6 +34,8 @@ def test_triage_classifier():
     assert is_urgent("Need an appointment date change") is False
     assert is_urgent("Have already taken my morning Metformin dose") is False
     assert is_urgent("Please confirm my pharmacy prescription refill") is False
+    assert is_urgent("This Saturday fits my schedule well") is False
+    assert is_urgent("Breathing exercises are helping my sleep") is False
     assert is_urgent("") is False
     assert is_urgent(None) is False
 
