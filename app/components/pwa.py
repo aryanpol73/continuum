@@ -4,7 +4,6 @@ Provides installability as a Progressive Web App across Desktop, Android, and iO
 """
 
 from __future__ import annotations
-import os
 import shutil
 from pathlib import Path
 import streamlit as st
@@ -12,13 +11,15 @@ import streamlit.components.v1 as components
 import streamlit.file_util as file_util
 
 PWA_TAGS = """    <!-- Continuum PWA Metadata -->
-    <link rel="manifest" href="/app/static/manifest.json" />
+    <link rel="manifest" href="/app/static/manifest.json" crossorigin="use-credentials" />
     <meta name="theme-color" content="#0F766E" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Continuum" />
-    <link rel="apple-touch-icon" href="/app/static/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" href="/app/static/icon-192.png" />
+    <link rel="shortcut icon" type="image/png" href="/app/static/icon-192.png" />
+    <link rel="apple-touch-icon" href="/app/static/icon-192.png" />
     <link rel="apple-touch-icon" sizes="192x192" href="/app/static/icon-192.png" />
     <link rel="apple-touch-icon" sizes="512x512" href="/app/static/icon-512.png" />
     <script>
@@ -36,19 +37,24 @@ PWA_TAGS = """    <!-- Continuum PWA Metadata -->
     </script>
 """
 
+_PWA_SETUP_DONE = False
+
 
 def setup_pwa() -> None:
     """
     Ensures PWA assets are deployed into Streamlit's static serving folder
     and that index.html contains the necessary PWA manifest and service worker hooks.
     """
+    global _PWA_SETUP_DONE
+    if _PWA_SETUP_DONE:
+        return
+
     base_dir = Path(__file__).resolve().parent.parent.parent
     app_static = base_dir / "app" / "static"
 
     try:
         st_static_dir = Path(file_util.get_static_dir())
         if st_static_dir.exists():
-            # Copy static files to streamlit static dir
             for fname in [
                 "manifest.json",
                 "sw.js",
@@ -63,7 +69,7 @@ def setup_pwa() -> None:
                     dst = st_static_dir / fname
                     shutil.copy2(src, dst)
 
-            # Update favicon.png with the new icon
+            # Update default Streamlit favicon with Continuum icon
             fav_src = app_static / "icon-192.png"
             if fav_src.exists():
                 shutil.copy2(fav_src, st_static_dir / "favicon.png")
@@ -74,11 +80,10 @@ def setup_pwa() -> None:
                 txt = index_file.read_text(encoding="utf-8")
                 if "<!-- Continuum PWA Metadata -->" not in txt:
                     new_txt = txt.replace("<head>", "<head>\n" + PWA_TAGS, 1)
-                    # Also replace default Streamlit title
                     new_txt = new_txt.replace("<title>Streamlit</title>", "<title>Continuum</title>")
                     index_file.write_text(new_txt, encoding="utf-8")
-    except Exception as e:
-        # Non-fatal if running in restricted environments
+        _PWA_SETUP_DONE = True
+    except Exception:
         pass
 
 
@@ -87,6 +92,26 @@ def inject_pwa_client_bridge() -> None:
     DOM-level injection bridge to guarantee manifest and service worker registration
     even when running inside client-side SPAs or iframes.
     """
+    setup_pwa()
+
+    # 1. Direct HTML tag injection into DOM
+    dom_tags = (
+        '<link rel="manifest" href="/app/static/manifest.json" crossorigin="use-credentials" />'
+        '<link rel="icon" type="image/png" href="/app/static/icon-192.png" />'
+        '<link rel="shortcut icon" type="image/png" href="/app/static/icon-192.png" />'
+        '<link rel="apple-touch-icon" href="/app/static/icon-192.png" />'
+        '<meta name="theme-color" content="#0F766E" />'
+        '<meta name="mobile-web-app-capable" content="yes" />'
+        '<meta name="apple-mobile-web-app-capable" content="yes" />'
+        '<meta name="apple-mobile-web-app-title" content="Continuum" />'
+    )
+    if hasattr(st, "html"):
+        try:
+            st.html(dom_tags)
+        except Exception:
+            pass
+
+    # 2. JavaScript execution via components.html to mutate parent head and register worker
     bridge_js = """
     <script>
     (function() {
@@ -95,16 +120,32 @@ def inject_pwa_client_bridge() -> None:
             const nav = (window.parent && window.parent.navigator) ? window.parent.navigator : navigator;
             const head = doc.head;
 
-            // 1. Ensure manifest link exists and points to /app/static/manifest.json
+            // Update title if default
+            if (doc.title === 'Streamlit') {
+                doc.title = 'Continuum — Care Engine';
+            }
+
+            // Ensure manifest link exists and points to /app/static/manifest.json with credentials
             let link = doc.querySelector('link[rel="manifest"]');
             if (!link) {
                 link = doc.createElement('link');
                 link.rel = 'manifest';
                 head.appendChild(link);
             }
+            link.crossOrigin = 'use-credentials';
             link.href = '/app/static/manifest.json';
 
-            // 2. Ensure theme color
+            // Ensure favicons point to Continuum logo
+            let fav = doc.querySelector('link[rel="shortcut icon"]');
+            if (fav) {
+                fav.href = '/app/static/icon-192.png';
+            }
+            let icon = doc.querySelector('link[rel="icon"]');
+            if (icon) {
+                icon.href = '/app/static/icon-192.png';
+            }
+
+            // Ensure theme color
             let metaTheme = doc.querySelector('meta[name="theme-color"]');
             if (!metaTheme) {
                 metaTheme = doc.createElement('meta');
@@ -113,7 +154,7 @@ def inject_pwa_client_bridge() -> None:
             }
             metaTheme.content = '#0F766E';
 
-            // 3. Apple mobile web app capable
+            // Apple mobile web app capable
             let metaApple = doc.querySelector('meta[name="apple-mobile-web-app-capable"]');
             if (!metaApple) {
                 metaApple = doc.createElement('meta');
@@ -122,7 +163,7 @@ def inject_pwa_client_bridge() -> None:
             }
             metaApple.content = 'yes';
 
-            // 4. Apple touch icon
+            // Apple touch icon
             let touchIcon = doc.querySelector('link[rel="apple-touch-icon"]');
             if (!touchIcon) {
                 touchIcon = doc.createElement('link');
@@ -131,7 +172,7 @@ def inject_pwa_client_bridge() -> None:
             }
             touchIcon.href = '/app/static/icon-192.png';
 
-            // 5. Register Service Worker on navigator
+            // Register Service Worker on navigator
             if ('serviceWorker' in nav) {
                 nav.serviceWorker.register('/app/static/sw.js')
                     .then(function(reg) {
@@ -147,10 +188,7 @@ def inject_pwa_client_bridge() -> None:
     })();
     </script>
     """
-    if hasattr(st, "html"):
-        st.html(bridge_js)
-    else:
-        components.html(bridge_js, height=0, width=0)
+    components.html(bridge_js, height=0, width=0)
 
 
 def render_pwa_sidebar_badge() -> None:
@@ -174,3 +212,7 @@ def render_pwa_sidebar_badge() -> None:
             *Runs standalone fullscreen with native app icon, fast caching, and offline support.*
             """
         )
+
+
+# Automatically execute setup once on initial import
+setup_pwa()
