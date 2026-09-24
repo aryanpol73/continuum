@@ -12,19 +12,19 @@ import streamlit.components.v1 as components
 import streamlit.file_util as file_util
 
 PWA_TAGS = """    <!-- Continuum PWA Metadata -->
-    <link rel="manifest" href="/manifest.json" />
+    <link rel="manifest" href="/app/static/manifest.json" />
     <meta name="theme-color" content="#0F766E" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Continuum" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png" />
-    <link rel="apple-touch-icon" sizes="512x512" href="/icon-512.png" />
+    <link rel="apple-touch-icon" href="/app/static/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/app/static/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="/app/static/icon-512.png" />
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
-          navigator.serviceWorker.register('/sw.js', { scope: '/' })
+          navigator.serviceWorker.register('/app/static/sw.js')
             .then(function(reg) {
               console.log('[Continuum PWA] Service Worker registered with scope:', reg.scope);
             })
@@ -95,41 +95,45 @@ def inject_pwa_client_bridge() -> None:
             const nav = (window.parent && window.parent.navigator) ? window.parent.navigator : navigator;
             const head = doc.head;
 
-            // 1. Ensure manifest link exists
-            if (!doc.querySelector('link[rel="manifest"]')) {
-                const link = doc.createElement('link');
+            // 1. Ensure manifest link exists and points to /app/static/manifest.json
+            let link = doc.querySelector('link[rel="manifest"]');
+            if (!link) {
+                link = doc.createElement('link');
                 link.rel = 'manifest';
-                link.href = '/manifest.json';
                 head.appendChild(link);
             }
+            link.href = '/app/static/manifest.json';
 
             // 2. Ensure theme color
-            if (!doc.querySelector('meta[name="theme-color"]')) {
-                const meta = doc.createElement('meta');
-                meta.name = 'theme-color';
-                meta.content = '#0F766E';
-                head.appendChild(meta);
+            let metaTheme = doc.querySelector('meta[name="theme-color"]');
+            if (!metaTheme) {
+                metaTheme = doc.createElement('meta');
+                metaTheme.name = 'theme-color';
+                head.appendChild(metaTheme);
             }
+            metaTheme.content = '#0F766E';
 
             // 3. Apple mobile web app capable
-            if (!doc.querySelector('meta[name="apple-mobile-web-app-capable"]')) {
-                const meta = doc.createElement('meta');
-                meta.name = 'apple-mobile-web-app-capable';
-                meta.content = 'yes';
-                head.appendChild(meta);
+            let metaApple = doc.querySelector('meta[name="apple-mobile-web-app-capable"]');
+            if (!metaApple) {
+                metaApple = doc.createElement('meta');
+                metaApple.name = 'apple-mobile-web-app-capable';
+                head.appendChild(metaApple);
             }
+            metaApple.content = 'yes';
 
             // 4. Apple touch icon
-            if (!doc.querySelector('link[rel="apple-touch-icon"]')) {
-                const link = doc.createElement('link');
-                link.rel = 'apple-touch-icon';
-                link.href = '/icon-192.png';
-                head.appendChild(link);
+            let touchIcon = doc.querySelector('link[rel="apple-touch-icon"]');
+            if (!touchIcon) {
+                touchIcon = doc.createElement('link');
+                touchIcon.rel = 'apple-touch-icon';
+                head.appendChild(touchIcon);
             }
+            touchIcon.href = '/app/static/icon-192.png';
 
             // 5. Register Service Worker on navigator
             if ('serviceWorker' in nav) {
-                nav.serviceWorker.register('/sw.js', { scope: '/' })
+                nav.serviceWorker.register('/app/static/sw.js')
                     .then(function(reg) {
                         console.log('[Continuum PWA Client] Registered:', reg.scope);
                     })

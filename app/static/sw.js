@@ -1,11 +1,11 @@
-const CACHE_NAME = 'continuum-pwa-v1';
+const CACHE_NAME = 'continuum-pwa-v2';
 const ASSETS_TO_CACHE = [
   '/',
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png',
-  '/apple-touch-icon.png',
-  '/offline.html'
+  '/app/static/manifest.json',
+  '/app/static/icon-192.png',
+  '/app/static/icon-512.png',
+  '/app/static/apple-touch-icon.png',
+  '/app/static/offline.html'
 ];
 
 self.addEventListener('install', (event) => {
